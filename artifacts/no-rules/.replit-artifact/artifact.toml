@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "NO RULES"
+description = "A Russian-language browser life simulator with randomly generated characters, families, events, and persistent saves."
+version = "1.0.0"
+id = "artifacts/no-rules"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21395
+
+[services.development]
+run = "pnpm --filter @workspace/no-rules run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/no-rules", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/no-rules/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21395"
+BASE_PATH = "/"
