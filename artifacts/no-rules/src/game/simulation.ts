@@ -1,3 +1,4 @@
+import { dateAge } from './generation';
 import type { BirthProfile, Life, LifeEvent, Stats } from './domain';
 
 const randomId = () => Math.random().toString(36).slice(2, 10);
@@ -75,7 +76,7 @@ export function advance(life: Life, actionId: ActionId, months = 1): Life {
   nextDate.setMonth(nextDate.getMonth() + months);
   life.currentDate = nextDate.toISOString().slice(0, 10);
   const previousAge = life.age;
-  life.age = Math.floor((nextDate.getTime() - new Date(`${life.birthDate}T12:00:00`).getTime()) / (365.2425 * 86400000));
+  life.age = dateAge(life.currentDate, life.birthDate);
   const description = action.description;
   addEvent(life, action.title, description, action.effects);
   if (life.age > previousAge) maybeMilestone(life);

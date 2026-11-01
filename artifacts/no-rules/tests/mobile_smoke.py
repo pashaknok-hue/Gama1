@@ -14,6 +14,7 @@ with sync_playwright() as p:
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto(BASE_URL)
     page.get_by_test_id('button-start-life').click()
+    page.get_by_test_id('button-pause-time').click()
     page.wait_for_timeout(2500)
     saved = json.loads(page.evaluate("localStorage.getItem('no-rules-life-v1')"))
     original_id = saved['id']
@@ -31,6 +32,8 @@ with sync_playwright() as p:
     saved = json.loads(page.evaluate("localStorage.getItem('no-rules-life-v1')"))
     page.reload()
     page.get_by_test_id('button-load-life').click()
+    if page.get_by_test_id('button-pause-time').count():
+        page.get_by_test_id('button-pause-time').click()
     assert json.loads(page.evaluate("localStorage.getItem('no-rules-life-v1')")) == saved
     print('PASS: month advance, speed, play/pause, save/reload preserve identity and progress')
     fixture = json.loads(json.dumps(saved))
@@ -43,6 +46,8 @@ with sync_playwright() as p:
     page.evaluate("data => localStorage.setItem('no-rules-life-v1',JSON.stringify(data))", fixture)
     page.reload()
     page.get_by_test_id('button-load-life').click()
+    if page.get_by_test_id('button-pause-time').count():
+        page.get_by_test_id('button-pause-time').click()
     page.wait_for_timeout(2500)
     assert page.locator('.nr-entry').count() == 120
     dates = page.locator('.nr-entry time').evaluate_all('(els)=>els.map(e=>e.dateTime)')
@@ -89,6 +94,8 @@ with sync_playwright() as p:
     page.evaluate("data => localStorage.setItem('no-rules-life-v1',JSON.stringify(data))", fixture)
     page.reload()
     page.get_by_test_id('button-load-life').click()
+    if page.get_by_test_id('button-pause-time').count():
+        page.get_by_test_id('button-pause-time').click()
     for w, h in [(320, 480), (390, 664), (667, 375), (844, 390)]:
         page.set_viewport_size({'width': w, 'height': h})
         dialog = page.get_by_role('dialog')

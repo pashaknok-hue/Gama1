@@ -27,6 +27,7 @@ import {
   type ActionId,
 } from './game/simulation';
 import { clearLife, loadLife, saveLife } from './game/storage';
+import { useGameClock } from './hooks/use-game-clock';
 import './game-ui.css';
 
 function chapterName(age: number) {
@@ -212,20 +213,21 @@ export default function App() {
     if (pendingDecision) setPlaying(false);
   }, [pendingDecision?.id]);
 
-  useEffect(() => {
-    if (!life || !playing || pendingDecision) return undefined;
-    const timer = window.setInterval(() => {
+  useGameClock({
+    lifeId: life?.id,
+    running: playing && !pendingDecision,
+    speed,
+    onTick: () => {
       setLife((current) => {
-        if (!current) return current;
-        const next = structuredClone(current);
-        return advance(next, automaticAction(current), 1);
+        if (!current || current.events.some((event) => event.choices?.length && !event.outcome)) return current;
+        return advance(structuredClone(current), automaticAction(current), 1);
       });
-    }, 10000 / speed);
-    return () => window.clearInterval(timer);
-  }, [life?.id, life?.age, playing, speed, pendingDecision?.id]);
+    },
+  });
 
   const startLife = () => {
-    setPlaying(false);
+    setSpeed(1);
+    setPlaying(true);
     setLife(makeLife(profile));
     setToast('История началась. Автосохранение включено.');
   };
@@ -248,7 +250,7 @@ export default function App() {
   const resume = () => {
     const savedLife = loadLife();
     if (savedLife) {
-      setPlaying(false);
+      setPlaying(!savedLife.events.some((event) => event.choices?.length && !event.outcome));
       setLife(savedLife);
       setToast('Сохранённая история открыта.');
     } else {
