@@ -1,0 +1,1 @@
+- [NO RULES interface direction](no-rules-ui.md) — text-led life journal, compact pixel scene and stats, paused four-choice events, mobile-first.

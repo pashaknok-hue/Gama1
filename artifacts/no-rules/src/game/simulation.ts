@@ -59,8 +59,10 @@ function maybeChoice(life: Life): Life {
     id: randomId(), date: life.currentDate, age: life.age, title: 'После уроков',
     description: 'Одноклассник зовёт тебя на кружок рисования. Дома ждут дела, но любопытство не отпускает.',
     choices: [
-      { label: 'Пойти на кружок', result: 'Новый знакомый показал, как смешивать краски. Ты возвращаешься домой с хорошим настроением.', effects: { curiosity: 6, happiness: 5, energy: -4 } },
-      { label: 'Остаться дома', result: 'Ты помог семье и провёл тихий вечер рядом с близкими.', effects: { happiness: 4, health: 2, energy: 2 } },
+      { label: 'Пойти на кружок', result: 'Новый знакомый показал, как смешивать краски. Ты возвращаешься домой с хорошим настроением.', effects: { curiosity: 7, happiness: 5, energy: -5 } },
+      { label: 'Позвать друга гулять', result: 'Вы придумали игру во дворе и договорились встретиться снова.', effects: { happiness: 7, curiosity: 3, energy: -7 } },
+      { label: 'Помочь семье дома', result: 'Ты помог разобрать покупки, а потом вместе с родными пил чай на кухне.', effects: { happiness: 4, health: 2, energy: 1 } },
+      { label: 'Попросить новую книгу', result: 'Вечером близкий человек читает тебе историю, и ты запоминаешь новое слово.', effects: { curiosity: 8, happiness: 2, energy: -2 } },
     ],
   };
   life.events.unshift(event);
