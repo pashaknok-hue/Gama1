@@ -10,6 +10,7 @@ type TimeControlsProps = {
   onToggle: () => void;
   onSpeedChange: () => void;
   onOpenActions: () => void;
+  actionsAvailable: boolean;
   onAdvanceMonth: () => void;
   onAdvanceYear: () => void;
 };
@@ -22,6 +23,7 @@ export default function TimeControls({
   onToggle,
   onSpeedChange,
   onOpenActions,
+  actionsAvailable,
   onAdvanceMonth,
   onAdvanceYear,
 }: TimeControlsProps) {
@@ -69,11 +71,11 @@ export default function TimeControls({
           type="button"
           onClick={onOpenActions}
           disabled={locked}
-          aria-label="Выбрать действие"
+          aria-label={actionsAvailable ? 'Выбрать действие' : 'Как проходит младенчество'}
           data-testid="button-open-actions"
         >
           <ListChecks size={15} />
-          <span>Действия</span>
+          <span>{actionsAvailable ? 'Действия' : 'Забота'}</span>
         </button>
         <div className="nr-manual-time">
           <button className="nr-control" type="button" onClick={onAdvanceMonth} disabled={locked} aria-label="Прожить следующий месяц" data-testid="button-next-month">

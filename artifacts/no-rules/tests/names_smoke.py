@@ -75,8 +75,13 @@ with sync_playwright() as p:
         load(life)
         assert page.locator('.nr-entry p').last.inner_text() == life['events'][0]['description']
         page.get_by_test_id('button-open-actions').click()
-        page.locator('.nr-action-option').filter(has_text='Обнять ребёнка').click()
-        assert page.locator('.nr-entry p').first.inner_text() == fixture['embrace']
+        assert page.get_by_test_id('infant-actions-note').is_visible()
+        assert page.locator('.nr-action-option').count() == 0
+        page.get_by_test_id('button-close-actions').click()
+        page.get_by_test_id('button-next-month').click()
+        event = json.loads(page.evaluate("localStorage.getItem('no-rules-life-v1')"))['events'][0]
+        assert event['kind'] == 'life' and event['actor'] and event['target'] and event['context']
+        assert page.locator('.nr-entry p').first.inner_text() == event['description']
         page.get_by_test_id('button-save').click()
         current=json.loads(page.evaluate("localStorage.getItem('no-rules-life-v1')"))
         load(current)

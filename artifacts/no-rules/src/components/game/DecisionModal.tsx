@@ -57,7 +57,7 @@ export default function DecisionModal({
             ))}
           </div>
           <div className="nr-event-foot">
-            <span>ВРЕМЯ ПРОДОЛЖИТСЯ ПОСЛЕ ВЫБОРА</span>
+            <span>ПОСЛЕ ВЫБОРА МОЖНО ПРОДОЛЖИТЬ ВРЕМЯ</span>
             <span className="nr-key-hint">NO RULES</span>
           </div>
         </div>

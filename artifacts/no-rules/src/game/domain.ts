@@ -9,8 +9,20 @@ export type BirthProfile = {
   country: string; region: string; birthplace?: Birthplace; family: FamilyMember[]; className: string;
   home: string; resources: string[]; character: Character;
 };
+export type EventParticipant = {
+  kind: 'character' | 'family' | 'person' | 'world' | 'object' | 'place';
+  name: string;
+  id?: string;
+};
 export type LifeEvent = {
   id: string; date: string; age: number; title: string; description: string;
+  kind?: 'life' | 'action' | 'decision' | 'milestone';
+  templateId?: string;
+  actor?: EventParticipant;
+  target?: EventParticipant;
+  context?: string;
+  resolution?: { actor: EventParticipant; choiceIndex: number };
+  eligibility?: { minAge: number; maxAge?: number };
   choices?: { label: string; result: string; effects: Partial<Stats> }[]; outcome?: string;
 };
 export type Life = {

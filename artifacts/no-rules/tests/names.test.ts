@@ -4,7 +4,7 @@ import { worldCountries, chooseBirthplace, settlementSize } from '../src/game/wo
 import { generateBirthProfile } from '../src/game/generation';
 import { generateFamilyNames, namePools, nameInCase } from '../src/game/names';
 import { russianSpelling } from '../src/game/name-transcription';
-import { makeLife, advance } from '../src/game/simulation';
+import { makeLife, advanceTime } from '../src/game/simulation';
 import { birthDescription, embraceDescription, birthdayDescription, isolateName } from '../src/game/event-text';
 import { loadLife, saveLife } from '../src/game/storage';
 import type { BirthProfile, Character } from '../src/game/domain';
@@ -179,9 +179,9 @@ test('Birth and automatic life events use Russian grammar without mutating names
     const before = JSON.stringify(life.character);
     assert.equal(life.events[0].description,birthDescription(profile));
     life.birthDate = life.currentDate = '2001-01-01';
-    advance(life,'cuddle');
-    assert.equal(life.events[0].description,embraceDescription(life.character));
-    advance(life,'sleep',11);
+    advanceTime(life,1,()=>.99);
+    assert.ok(life.events[0].actor && life.events[0].target && life.events[0].context);
+    advanceTime(life,11,()=>.99);
     assert.equal(life.age,1);
     assert.ok(life.events.some((event) => event.title === 'Первые шаги'));
     assert.equal(JSON.stringify(life.character),before);
