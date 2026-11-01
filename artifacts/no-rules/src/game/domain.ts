@@ -1,7 +1,9 @@
+import type { PersonalName } from './names';
+
 export type Gender = 'Девочка' | 'Мальчик';
 export type Stats = { health: number; happiness: number; curiosity: number; energy: number };
-export type Character = { name: string; gender: Gender; traits: string[] };
-export type FamilyMember = { id: string; name: string; relationship: string; age: number; occupation: string; personality: string };
+export type Character = { name: string; personalName?: PersonalName; gender: Gender; traits: string[] };
+export type FamilyMember = { id: string; name: string; personalName?: PersonalName; relationship: string; age: number; occupation: string; personality: string };
 export type BirthProfile = {
   country: string; region: string; family: FamilyMember[]; className: string;
   home: string; resources: string[]; character: Character;

@@ -314,13 +314,13 @@ export default function App() {
         <section className="nr-character-row">
           <div>
             <div className="nr-eyebrow">ТВОЯ ИСТОРИЯ · {chapterName(life.age)}</div>
-            <h1>{life.character.name.toUpperCase()}</h1>
+            <h1>{life.character.name}</h1>
             <div className="nr-character-sub">
               {life.character.traits.join(' · ')} <i /> {life.location.region}, {life.location.country}
             </div>
             <div className="nr-character-family" data-testid="display-family">
               <span>рядом:</span>{' '}
-              {life.family.map((person) => `${person.relationship.toLowerCase()} ${person.name.split(' ')[0]}`).join(' · ')}
+              {life.family.map((person) => `${person.relationship.toLowerCase()} ${person.name}`).join(' · ')}
             </div>
           </div>
           <div className="nr-age-stamp" data-testid="display-age">

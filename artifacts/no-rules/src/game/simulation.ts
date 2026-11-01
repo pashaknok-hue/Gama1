@@ -1,3 +1,4 @@
+import { birthDescription, birthdayDescription, embraceDescription } from './event-text';
 import { dateAge } from './generation';
 import type { BirthProfile, Life, LifeEvent, Stats } from './domain';
 
@@ -8,7 +9,7 @@ export function makeLife(profile: BirthProfile): Life {
   const dateLabel = new Date(`${birthDate}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
   const birth: LifeEvent = {
     id: randomId(), date: birthDate, age: 0, title: 'Первый день',
-    description: `${profile.character.name} родился в семье ${profile.family.map((member) => member.name.split(' ')[0]).join(' и ')}. За окном ${profile.region.toLowerCase()} — начинается новая история.`,
+    description: birthDescription(profile),
   };
   const now = new Date().toISOString();
   return {
@@ -21,7 +22,7 @@ export function makeLife(profile: BirthProfile): Life {
 }
 
 const actions = {
-  cuddle: { title: 'Обнять малыша', infant: true, description: 'Тепло и спокойствие рядом.', effects: { happiness: 7, health: 2, energy: -3 } },
+  cuddle: { title: 'Обнять ребёнка', infant: true, description: 'Тепло и спокойствие рядом.', effects: { happiness: 7, health: 2, energy: -3 } },
   walk: { title: 'Прогуляться', infant: true, description: 'Свежий воздух и новые звуки.', effects: { health: 5, curiosity: 4, energy: -5 } },
   sleep: { title: 'Хорошо выспаться', infant: true, description: 'Набраться сил до завтра.', effects: { energy: 13, health: 2 } },
   play: { title: 'Играть во дворе', minAge: 2, description: 'День, полный открытий.', effects: { happiness: 6, curiosity: 5, energy: -7 } },
@@ -47,9 +48,9 @@ function addEvent(life: Life, title: string, description: string, effects?: Part
 }
 
 function maybeMilestone(life: Life): Life {
-  if (life.age === 1) return addEvent(life, 'Первые шаги', `${life.character.name} сделал первые неуверенные шаги. Весь дом на мгновение замер.`);
-  if (life.age === 3) return addEvent(life, 'Первое большое «почему?»', 'Вопросов становится всё больше, а мир — всё интереснее.');
-  if (life.age === 6) return addEvent(life, 'Новая глава', `${life.character.name} впервые переступил порог школы.`);
+  if (life.age === 1) return addEvent(life, 'Первые шаги', `${birthdayDescription(life.character, life.age)} ${life.character.name} делает первые неуверенные шаги. Весь дом на мгновение замер.`);
+  if (life.age === 3) return addEvent(life, 'Первое большое «почему?»', `${birthdayDescription(life.character, life.age)} Вопросов становится всё больше, а мир — всё интереснее.`);
+  if (life.age === 6) return addEvent(life, 'Новая глава', `${birthdayDescription(life.character, life.age)} ${life.character.name} впервые переступает порог школы.`);
   if (life.age === 13) return addEvent(life, 'Свои решения', 'Всё чаще хочется самому выбирать, как провести день.');
   if (life.age === 18) return addEvent(life, 'Взрослая жизнь', 'Перед тобой открывается больше дорог, чем прежде.');
   return life;
@@ -62,7 +63,7 @@ function maybeChoice(life: Life): Life {
     choices: [
       { label: 'Пойти на кружок', result: 'Новый знакомый показал, как смешивать краски. Ты возвращаешься домой с хорошим настроением.', effects: { curiosity: 7, happiness: 5, energy: -5 } },
       { label: 'Позвать друга гулять', result: 'Вы придумали игру во дворе и договорились встретиться снова.', effects: { happiness: 7, curiosity: 3, energy: -7 } },
-      { label: 'Помочь семье дома', result: 'Ты помог разобрать покупки, а потом вместе с родными пил чай на кухне.', effects: { happiness: 4, health: 2, energy: 1 } },
+      { label: 'Помочь семье дома', result: 'Покупки разобраны, а потом вся семья собирается за чаем на кухне.', effects: { happiness: 4, health: 2, energy: 1 } },
       { label: 'Попросить новую книгу', result: 'Вечером близкий человек читает тебе историю, и ты запоминаешь новое слово.', effects: { curiosity: 8, happiness: 2, energy: -2 } },
     ],
   };
@@ -77,7 +78,7 @@ export function advance(life: Life, actionId: ActionId, months = 1): Life {
   life.currentDate = nextDate.toISOString().slice(0, 10);
   const previousAge = life.age;
   life.age = dateAge(life.currentDate, life.birthDate);
-  const description = action.description;
+  const description = actionId === 'cuddle' ? embraceDescription(life.character) : action.description;
   addEvent(life, action.title, description, action.effects);
   if (life.age > previousAge) maybeMilestone(life);
   maybeChoice(life);
