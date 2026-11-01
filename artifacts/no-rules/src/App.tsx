@@ -21,11 +21,13 @@ import type { BirthProfile, Life } from './game/domain';
 import { generateBirthProfile } from './game/generation';
 import {
   advance,
+  advanceTime,
   availableActions,
   makeLife,
   resolveChoice,
   type ActionId,
 } from './game/simulation';
+import { pendingDecision as getPendingDecision } from './game/event-rules';
 import { clearLife, loadLife, saveLife } from './game/storage';
 import { useGameClock } from './hooks/use-game-clock';
 import worldCoverage from '../data/COVERAGE.md?url';
@@ -40,22 +42,6 @@ function chapterName(age: number) {
   if (age < 13) return 'ДЕТСТВО';
   if (age < 18) return 'ПОДРОСТКОВЫЕ ГОДЫ';
   return 'ВЗРОСЛАЯ ЖИЗНЬ';
-}
-
-function automaticAction(life: Life): ActionId {
-  const actions = availableActions(life.age);
-  const preferred: ActionId = life.stats.energy < 28
-    ? 'sleep'
-    : life.age < 3
-      ? 'cuddle'
-      : life.stats.curiosity < 38 && life.age >= 3
-        ? 'read'
-        : life.age < 7
-          ? 'play'
-          : life.age < 18
-            ? 'learn'
-            : 'create';
-  return actions.find((action) => action.id === preferred)?.id ?? actions[0]?.id ?? 'sleep';
 }
 
 function Logo() {
@@ -220,11 +206,8 @@ export default function App() {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<TimeSpeed>(1);
 
-  const pendingDecision = life?.events.find((event) => event.choices?.length && !event.outcome) ?? null;
-  const actions = useMemo(() => life ? availableActions(life.age) : [], [life?.age]);
-  const safeAdvanceAction = life
-    ? actions.find((action) => action.id === 'sleep')?.id ?? actions[0]?.id ?? 'cuddle'
-    : 'cuddle';
+  const pendingDecision = getPendingDecision(life);
+  const actions = useMemo(() => life ? availableActions(life.age, life.stats) : [], [life?.age, life?.stats.energy]);
 
   useEffect(() => {
     setHasSave(Boolean(loadLife()));
@@ -250,8 +233,8 @@ export default function App() {
     speed,
     onTick: () => {
       setLife((current) => {
-        if (!current || current.events.some((event) => event.choices?.length && !event.outcome)) return current;
-        return advance(structuredClone(current), automaticAction(current), 1);
+        if (!current || getPendingDecision(current)) return current;
+        return advanceTime(structuredClone(current), 1);
       });
     },
   });
@@ -271,6 +254,11 @@ export default function App() {
     setLife(advance(next, actionId, months));
   };
 
+  const passTime = (months: number) => {
+    if (!life || pendingDecision) return;
+    setLife(advanceTime(structuredClone(life), months));
+  };
+
   const choose = (eventId: string, choiceIndex: number) => {
     if (!life) return;
     const next = structuredClone(life);
@@ -281,7 +269,7 @@ export default function App() {
   const resume = () => {
     const savedLife = loadLife();
     if (savedLife) {
-      setPlaying(!savedLife.events.some((event) => event.choices?.length && !event.outcome));
+      setPlaying(!getPendingDecision(savedLife));
       setLife(savedLife);
       setToast('Сохранённая история открыта.');
     } else {
@@ -376,8 +364,9 @@ export default function App() {
           onToggle={() => setPlaying((value) => !value)}
           onSpeedChange={cycleSpeed}
           onOpenActions={() => setShowActions(true)}
-          onAdvanceMonth={() => applyAction(safeAdvanceAction, 1)}
-          onAdvanceYear={() => applyAction(safeAdvanceAction, 12)}
+          actionsAvailable={actions.length > 0}
+          onAdvanceMonth={() => passTime(1)}
+          onAdvanceYear={() => passTime(12)}
         />
 
         <div className="nr-content-grid">

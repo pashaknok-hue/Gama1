@@ -101,11 +101,13 @@ with sync_playwright() as p:
     assert saved(page)['currentDate'] == '2002-02-01', 'Birthday must not stop/restart the clock'
     print('PASS: reload, twelve automatic months, exact birthday, age and milestone; timer continues')
 
-    decision = dict(birthday['events'][0], id='timer-decision', outcome=None, choices=[
+    decision = dict(birthday['events'][0], id='timer-decision', kind='decision', age=3, date='2004-01-01', eligibility={'minAge':3,'maxAge':5}, outcome=None, choices=[
         {'label': f'Выбор {i}', 'result': 'Семейный день', 'effects': {'happiness': 1}}
         for i in range(4)
     ])
     fixture = saved(page)
+    fixture['age'] = 3
+    fixture['currentDate'] = '2004-01-01'
     fixture['events'].insert(0, decision)
     page.evaluate("data => localStorage.setItem('no-rules-life-v1', JSON.stringify(data))", fixture)
     page.get_by_test_id('button-load').click()
