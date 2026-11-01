@@ -10,7 +10,7 @@ function eventDate(date: string) {
 }
 
 export default function LifeJournal({ events }: { events: LifeEvent[] }) {
-  const entries = [...events].reverse();
+  const entries = events;
 
   return (
     <section className="nr-feed" aria-labelledby="nr-feed-title">
@@ -28,7 +28,7 @@ export default function LifeJournal({ events }: { events: LifeEvent[] }) {
         {entries.length ? entries.map((event, index) => (
           <article className="nr-entry" key={event.id} data-testid={`event-${event.id}`}>
             <div className="nr-entry-rail">
-              <span className={`nr-timeline-dot ${index === entries.length - 1 ? 'is-current' : ''}`} />
+              <span className={`nr-timeline-dot ${index === 0 ? 'is-current' : ''}`} />
               {index !== entries.length - 1 && <span className="nr-timeline-line" />}
             </div>
             <div className="nr-entry-content">

@@ -1,28 +1,190 @@
-import './_group.css';
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Heart, Sparkles, Brain, Battery, RotateCcw, Save, FolderOpen, ArrowRight, RefreshCw, X, BookOpen, Sun, Footprints, House, Leaf } from 'lucide-react';
+import {
+  ArrowRight,
+  BookOpen,
+  FolderOpen,
+  Heart,
+  Home,
+  Leaf,
+  RotateCcw,
+  Save,
+  Shuffle,
+  Sparkles,
+  Users,
+  X,
+} from 'lucide-react';
+import CharacterStatus from './components/game/CharacterStatus';
+import DecisionModal from './components/game/DecisionModal';
+import EnvironmentScene from './components/game/EnvironmentScene';
+import LifeJournal from './components/game/LifeJournal';
+import TimeControls, { type TimeSpeed } from './components/game/TimeControls';
 import type { BirthProfile, Life } from './game/domain';
 import { generateBirthProfile } from './game/generation';
-import { advance, availableActions, makeLife, resolveChoice, type ActionId } from './game/simulation';
+import {
+  advance,
+  availableActions,
+  makeLife,
+  resolveChoice,
+  type ActionId,
+} from './game/simulation';
 import { clearLife, loadLife, saveLife } from './game/storage';
+import './_group.css';
 
-function PixelScene() {
-  return <div className="pixel-scene" aria-label="Пиксельный пейзаж тихой улицы">
-    <div className="scene-sky" /><div className="scene-sun" /><div className="scene-cloud" />
-    <div className="hill back" /><div className="hill" />
-    <div className="house"><div className="house-window" /><div className="house-door" /></div>
-    <div className="ground" /><span className="pixel-flower flower-a" /><span className="pixel-flower flower-b" /><span className="pixel-flower flower-c" />
-  </div>;
+function ageInRussian(age: number) {
+  if (age === 0) return 'первый год';
+  const lastTwo = age % 100;
+  const last = age % 10;
+  const noun = lastTwo >= 11 && lastTwo <= 14 ? 'лет' : last === 1 ? 'год' : last >= 2 && last <= 4 ? 'года' : 'лет';
+  return `${age} ${noun}`;
 }
-function StatMeter({ label, value, kind, testId }: { label: string; value: number; kind: string; testId: string }) {
-  const Icon = kind === 'health' ? Heart : kind === 'happiness' ? Sun : kind === 'curiosity' ? Brain : Battery;
-  return <div className="stat-card" data-testid={testId}>
-    <div className="stat-top"><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon size={17} />{label}</span><strong className="stat-num">{value}</strong></div>
-    <div className="meter"><div className={`meter-fill ${kind}`} style={{ width: `${value}%` }} /></div>
-  </div>;
+
+function chapterName(age: number) {
+  if (age < 3) return 'ПЕРВЫЕ ГОДЫ';
+  if (age < 7) return 'РАННЕЕ ДЕТСТВО';
+  if (age < 13) return 'ДЕТСТВО';
+  if (age < 18) return 'ПОДРОСТКОВЫЕ ГОДЫ';
+  return 'ВЗРОСЛАЯ ЖИЗНЬ';
 }
-function StatLabel({ label, value }: { label: string; value: number }) {
-  return <div className="record-line"><span>{label}</span><strong>{value}</strong></div>;
+
+function automaticAction(life: Life): ActionId {
+  const actions = availableActions(life.age);
+  const preferred: ActionId = life.stats.energy < 28
+    ? 'sleep'
+    : life.age < 3
+      ? 'cuddle'
+      : life.stats.curiosity < 38 && life.age >= 3
+        ? 'read'
+        : life.age < 7
+          ? 'play'
+          : life.age < 18
+            ? 'learn'
+            : 'create';
+  return actions.find((action) => action.id === preferred)?.id ?? actions[0]?.id ?? 'sleep';
+}
+
+function Logo() {
+  return (
+    <div className="nr-brand" aria-label="NO RULES — жизнь без сценария">
+      <div className="nr-mark" aria-hidden="true">НР</div>
+      <div>
+        <div className="nr-brand-name">NO RULES</div>
+        <div className="nr-brand-caption">ЖИЗНЬ БЕЗ СЦЕНАРИЯ</div>
+      </div>
+    </div>
+  );
+}
+
+function NewLifeScreen({
+  profile,
+  hasSave,
+  onStart,
+  onReroll,
+  onResume,
+}: {
+  profile: BirthProfile;
+  hasSave: boolean;
+  onStart: () => void;
+  onReroll: () => void;
+  onResume: () => void;
+}) {
+  return (
+    <main className="nr-journal nr-setup">
+      <div className="nr-grain" aria-hidden="true" />
+      <header className="nr-topbar">
+        <Logo />
+        <div className="nr-save-state">
+          <span className="nr-save-dot" />
+          {hasSave ? 'СОХРАНЁННАЯ ИСТОРИЯ ДОСТУПНА' : 'СЛУЧАЙНОЕ РОЖДЕНИЕ'}
+        </div>
+        {hasSave && (
+          <button className="nr-topbar-icon" type="button" onClick={onResume} data-testid="button-load-life">
+            <FolderOpen size={15} /> Продолжить
+          </button>
+        )}
+      </header>
+
+      <div className="nr-setup-shell">
+        <section className="nr-setup-hero">
+          <div className="nr-setup-copy">
+            <div className="nr-eyebrow">ТВОЯ ИСТОРИЯ НАЧИНАЕТСЯ СЕЙЧАС</div>
+            <h1>НИКАКОГО СЦЕНАРИЯ.</h1>
+            <p>Обычная жизнь. Случайное начало. Посмотрим, куда приведёт каждый день.</p>
+            <div className="nr-setup-buttons">
+              <button className="nr-control nr-main-control" type="button" onClick={onStart} data-testid="button-start-life">
+                Начать эту жизнь <ArrowRight size={16} />
+              </button>
+              <button className="nr-control" type="button" onClick={onReroll} data-testid="button-reroll">
+                <Shuffle size={15} /> Другая судьба
+              </button>
+            </div>
+          </div>
+          <div className="nr-setup-scene">
+            <EnvironmentScene profile={profile} />
+          </div>
+        </section>
+
+        <div className="nr-setup-grid">
+          <section className="nr-setup-section" aria-label="Запись о рождении">
+            <div className="nr-setup-heading">
+              <h2>ЗАПИСЬ О РОЖДЕНИИ</h2>
+              <span className="nr-entry-count">№ 001</span>
+            </div>
+            <div className="nr-setup-data">
+              <div className="nr-setup-line" data-testid="display-character">
+                <span>Имя ребёнка</span><strong>{profile.character.name}</strong>
+              </div>
+              <div className="nr-setup-line">
+                <span>Пол</span><strong>{profile.character.gender}</strong>
+              </div>
+              <div className="nr-setup-line" data-testid="display-birthplace">
+                <span>Место рождения</span><strong>{profile.region}, {profile.country}</strong>
+              </div>
+              <div className="nr-setup-line">
+                <span>Семейный достаток</span><strong>{profile.className}</strong>
+              </div>
+              <div className="nr-setup-line">
+                <span>Дом</span><strong>{profile.home}</strong>
+              </div>
+            </div>
+            <div className="nr-setup-family">
+              {profile.family.map((person) => (
+                <span className="nr-setup-chip" key={person.id}>
+                  {person.relationship}: {person.name}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          <section className="nr-setup-section" aria-label="Семья и первые черты">
+            <div className="nr-setup-heading">
+              <h2><Users size={15} /> СЕМЬЯ И ПЕРВЫЕ ШТРИХИ</h2>
+              <Sparkles size={15} />
+            </div>
+            <div className="nr-setup-data">
+              <div className="nr-setup-line">
+                <span>Характер</span><strong>{profile.character.traits.join(' · ')}</strong>
+              </div>
+              {profile.family.map((person) => (
+                <div className="nr-setup-line" key={person.id}>
+                  <span>{person.relationship}</span><strong>{person.occupation}</strong>
+                </div>
+              ))}
+            </div>
+            <div className="nr-setup-family">
+              {profile.resources.map((resource) => (
+                <span className="nr-setup-chip" key={resource}><Leaf size={12} /> {resource}</span>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <footer className="nr-setup-footer">
+          <span>Случайное рождение. Настоящие последствия. Только твой выбор.</span>
+          <span><BookOpen size={14} /> История хранится на этом устройстве.</span>
+        </footer>
+      </div>
+    </main>
+  );
 }
 
 export default function App() {
@@ -31,182 +193,246 @@ export default function App() {
   const [showRestart, setShowRestart] = useState(false);
   const [toast, setToast] = useState('');
   const [hasSave, setHasSave] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState<TimeSpeed>(1);
 
-  useEffect(() => { setHasSave(Boolean(loadLife())); }, []);
+  const pendingDecision = life?.events.find((event) => event.choices?.length && !event.outcome) ?? null;
+  const actions = useMemo(() => life ? availableActions(life.age) : [], [life?.age]);
+  const safeAdvanceAction = life
+    ? actions.find((action) => action.id === 'sleep')?.id ?? actions[0]?.id ?? 'cuddle'
+    : 'cuddle';
+  const formattedDate = life
+    ? new Date(`${life.currentDate}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
+
   useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(''), 2300);
+    setHasSave(Boolean(loadLife()));
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = window.setTimeout(() => setToast(''), 2400);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
   useEffect(() => {
     if (life) setHasSave(saveLife(life));
   }, [life]);
 
-  const actions = useMemo(() => life ? availableActions(life.age) : [], [life?.age]);
-  const reroll = () => setProfile(generateBirthProfile());
+  useEffect(() => {
+    if (pendingDecision) setPlaying(false);
+  }, [pendingDecision?.id]);
+
+  useEffect(() => {
+    if (!life || !playing || pendingDecision) return undefined;
+    const timer = window.setInterval(() => {
+      setLife((current) => {
+        if (!current) return current;
+        const next = structuredClone(current);
+        return advance(next, automaticAction(current), 1);
+      });
+    }, 10000 / speed);
+    return () => window.clearInterval(timer);
+  }, [life?.id, life?.age, playing, speed, pendingDecision?.id]);
+
   const startLife = () => {
-    const next = makeLife(profile);
-    setLife(next);
-    setToast('История началась. Сохранение включено.');
+    setPlaying(false);
+    setLife(makeLife(profile));
+    setToast('История началась. Автосохранение включено.');
   };
+
+  const reroll = () => setProfile(generateBirthProfile());
+
   const applyAction = (actionId: ActionId, months = 1) => {
-    if (!life) return;
+    if (!life || pendingDecision) return;
     const next = structuredClone(life);
     setLife(advance(next, actionId, months));
   };
+
   const choose = (eventId: string, choiceIndex: number) => {
     if (!life) return;
     const next = structuredClone(life);
     setLife(resolveChoice(next, eventId, choiceIndex));
+    setPlaying(false);
   };
+
   const resume = () => {
-    const loaded = loadLife();
-    if (loaded) { setLife(loaded); setToast('Сохранённая история открыта.'); }
-    else { setHasSave(false); setToast('Сохранение не найдено или повреждено.'); }
+    const savedLife = loadLife();
+    if (savedLife) {
+      setPlaying(false);
+      setLife(savedLife);
+      setToast('Сохранённая история открыта.');
+    } else {
+      setHasSave(false);
+      setToast('Сохранение не найдено или повреждено.');
+    }
   };
+
+  const saveNow = () => {
+    if (!life) return;
+    const success = saveLife(life);
+    setHasSave(success);
+    setToast(success ? 'История сохранена на этом устройстве.' : 'Не удалось сохранить историю.');
+  };
+
   const newLife = () => {
-    clearLife(); setHasSave(false); setLife(null); setProfile(generateBirthProfile()); setShowRestart(false);
+    clearLife();
+    setHasSave(false);
+    setPlaying(false);
+    setLife(null);
+    setProfile(generateBirthProfile());
+    setShowRestart(false);
   };
-  const monthAdvanceAction = actions.find((action) => action.id === 'sleep')?.id ?? actions[0]?.id ?? 'cuddle';
-  const formattedDate = life ? new Date(`${life.currentDate}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
-  const ageText = life ? life.age === 0 ? 'Первый год жизни' : `${life.age} ${life.age === 1 ? 'год' : life.age < 5 ? 'года' : 'лет'}` : '';
 
-  if (!life) return <main className="game-shell">
-    <header className="topbar">
-      <div className="brand"><div className="brand-mark">НР</div><div className="brand-word">NO RULES<br />ЖИЗНЬ БЕЗ СЦЕНАРИЯ</div></div>
-      <div className="top-meta">одна жизнь · бесконечно разных историй</div>
-      {hasSave && <button className="pixel-button small" onClick={resume} data-testid="button-load-life"><FolderOpen size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />Продолжить</button>}
-    </header>
-    <div className="intro-wrap">
-      <section className="intro-banner">
-        <div className="intro-copy">
-          <span className="eyebrow">ТВОЯ ИСТОРИЯ НАЧИНАЕТСЯ СЕЙЧАС</span>
-          <h1 className="pixel-title">НИКАКОГО<br />СЦЕНАРИЯ.</h1>
-          <p>Обычная жизнь. Случайное начало. Посмотрим, куда приведёт каждый день.</p>
-          <button className="pixel-button gold" onClick={startLife} data-testid="button-start-life">Начать эту жизнь <ArrowRight size={17} style={{ verticalAlign: 'middle', marginLeft: 8 }} /></button>
-        </div>
-        <PixelScene />
-      </section>
-      <div className="setup-grid">
-        <section className="panel" aria-label="Случайная запись о рождении">
-          <div className="panel-head"><h2>ЗАПИСЬ О РОЖДЕНИИ</h2>
-            <button className="pixel-button secondary small" onClick={reroll} data-testid="button-reroll"><RefreshCw size={15} style={{ verticalAlign: 'middle', marginRight: 6 }} />Другая судьба</button>
-          </div>
-          <div className="panel-body">
-            <div className="record-line" data-testid="display-character"><span>Имя ребёнка</span><strong>{profile.character.name}</strong></div>
-            <div className="record-line"><span>Пол</span><strong>{profile.character.gender}</strong></div>
-            <div className="record-line" data-testid="display-birthplace"><span>Место рождения</span><strong>{profile.region}, {profile.country}</strong></div>
-            <div className="record-line"><span>Семейный достаток</span><strong>{profile.className}</strong></div>
-            <div className="record-line"><span>Дом</span><strong>{profile.home}</strong></div>
-            <div className="family-mini">{profile.family.map((person) => <span className="family-chip" key={person.id}>{person.relationship}: {person.name}</span>)}</div>
-            <div className="conditions" style={{ marginTop: 12 }}>{profile.resources.map((item) => <span className="condition-tag" key={item}>{item}</span>)}</div>
-          </div>
-        </section>
-        <section className="panel">
-          <div className="panel-head"><h2>ПЕРВЫЕ ШТРИХИ</h2><Sparkles size={17} /></div>
-          <div className="panel-body">
-            <div className="record-line"><span>Характер</span><strong>{profile.character.traits.join(' · ')}</strong></div>
-            <p style={{ fontSize: 21, color: '#66705e', lineHeight: 1.15, margin: '18px 0 0' }}>Начальные условия — не приговор. Каждое действие меняет настроение, силы и любопытство. Время движется вместе с тобой.</p>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 18, color: '#65745b' }}><BookOpen size={18} /> История сохраняется на этом устройстве.</div>
-          </div>
-        </section>
-      </div>
-      <div className="intro-footer"><span>Случайное рождение. Настоящие последствия. Только твой выбор.</span><span>16-битная жизнь · версия 01</span></div>
-    </div>
-    {toast && <div className="toast-note" role="status">{toast}</div>}
-  </main>;
+  const cycleSpeed = () => {
+    setSpeed((current) => current === 1 ? 2 : current === 2 ? 4 : 1);
+  };
 
-  return <main className="game-shell">
-    <header className="topbar">
-      <div className="brand"><div className="brand-mark">НР</div><div className="brand-word">NO RULES<br />ЖИЗНЬ БЕЗ СЦЕНАРИЯ</div></div>
-      <div className="top-meta"><Save size={15} style={{ verticalAlign: 'middle', marginRight: 5 }} />{hasSave ? 'Сохранено на этом устройстве' : 'Идёт сохранение'}</div>
-      <button className="pixel-button secondary small" onClick={() => setShowRestart(true)} data-testid="button-new-life"><RotateCcw size={15} style={{ verticalAlign: 'middle', marginRight: 5 }} />Новая жизнь</button>
-    </header>
-    <div className="game-layout">
-      <div className="game-head">
-        <div><h1 className="life-title">{life.character.name.toUpperCase()}</h1><p className="life-sub">{life.character.traits.join(' · ')} <span aria-hidden="true">/</span> {life.location.region}</p></div>
-        <div className="header-actions">
-          <button className="pixel-button secondary small" onClick={() => { if (saveLife(life)) { setHasSave(true); setToast('История сохранена.'); } else setToast('Не удалось сохранить историю.'); }} data-testid="button-save"><Save size={15} style={{ verticalAlign: 'middle', marginRight: 5 }} />Сохранить</button>
-          <button className="pixel-button secondary small" onClick={resume} data-testid="button-load"><FolderOpen size={15} style={{ verticalAlign: 'middle', marginRight: 5 }} />Загрузить</button>
+  if (!life) {
+    return (
+      <>
+        <NewLifeScreen profile={profile} hasSave={hasSave} onStart={startLife} onReroll={reroll} onResume={resume} />
+        {toast && <div className="nr-toast" role="status">{toast}</div>}
+      </>
+    );
+  }
+
+  return (
+    <main className="nr-journal">
+      <div className="nr-grain" aria-hidden="true" />
+      <header className="nr-topbar">
+        <Logo />
+        <div className="nr-save-state" role="status" data-testid="status-save">
+          <span className="nr-save-dot" />
+          {hasSave ? 'ИСТОРИЯ СОХРАНЕНА' : 'ПРОВЕРКА СОХРАНЕНИЯ'}
         </div>
-      </div>
-      <div className="game-grid">
-        <section className="main-column">
-          <div className="date-card" data-testid="display-calendar">
-            <div className="date-display"><div className="date-icon"><CalendarDays size={24} /></div><div><div className="date-main">{formattedDate}</div><div className="date-age">{ageText} · {life.age === 0 ? 'малыш' : 'возраст'}</div></div></div>
-            <div className="calendar-controls">
-              <button className="pixel-button secondary small" onClick={() => applyAction(monthAdvanceAction, 1)} data-testid="button-next-month">+ месяц</button>
-              <button className="pixel-button small" onClick={() => applyAction(monthAdvanceAction, 12)} data-testid="button-next-year">+ год</button>
+        <div className="nr-save-actions">
+          <button className="nr-topbar-icon" type="button" onClick={saveNow} aria-label="Сохранить историю" data-testid="button-save">
+            <Save size={15} /> <span>Сохранить</span>
+          </button>
+          <button className="nr-topbar-icon" type="button" onClick={resume} aria-label="Загрузить историю" data-testid="button-load">
+            <FolderOpen size={15} /> <span>Загрузить</span>
+          </button>
+          <button className="nr-topbar-icon" type="button" onClick={() => setShowRestart(true)} aria-label="Начать новую жизнь" data-testid="button-new-life">
+            <RotateCcw size={15} /> <span>Новая жизнь</span>
+          </button>
+        </div>
+      </header>
+
+      <div className="nr-shell">
+        <section className="nr-character-row">
+          <div>
+            <div className="nr-eyebrow">ТВОЯ ИСТОРИЯ · {chapterName(life.age)}</div>
+            <h1>{life.character.name.toUpperCase()}</h1>
+            <div className="nr-character-sub">
+              {life.character.traits.join(' · ')} <i /> {life.location.region}, {life.location.country}
             </div>
           </div>
-          <div className="life-scene"><PixelScene /><div className="scene-caption">{life.age < 3 ? 'Мир начинается с дома' : life.age < 7 ? 'Всё вокруг — открытие' : life.age < 18 ? 'Время искать свой путь' : 'Каждый день — новая глава'}</div></div>
-          <div className="stats-grid" data-testid="display-stats">
-            <StatMeter label="Здоровье" value={life.stats.health} kind="health" testId="stat-health" />
-            <StatMeter label="Счастье" value={life.stats.happiness} kind="happiness" testId="stat-happiness" />
-            <StatMeter label="Интерес" value={life.stats.curiosity} kind="curiosity" testId="stat-curiosity" />
-            <StatMeter label="Энергия" value={life.stats.energy} kind="energy" testId="stat-energy" />
+          <div className="nr-age-stamp" data-testid="display-age">
+            <span>ВОЗРАСТ</span>
+            <strong>{life.age}</strong>
+            <small>{life.age === 1 ? 'год' : life.age > 1 && life.age < 5 ? 'года' : 'лет'}</small>
           </div>
-          <section className="panel">
-            <div className="panel-head"><h2>ЧЕМ ЗАНЯТЬСЯ СЕГОДНЯ</h2><span className="save-note"><Footprints size={15} /> каждое действие двигает время</span></div>
-            <div className="panel-body"><div className="action-list">
-              {actions.map((action) => <button className="action-card" key={action.id} onClick={() => applyAction(action.id)} data-testid={`action-${action.id}`}>
-                <span className="action-title">{action.title}</span><span className="action-note">{action.description}</span>
-              </button>)}
-            </div></div>
-          </section>
-          <section className="panel">
-            <div className="panel-head"><h2>ДНЕВНИК СОБЫТИЙ</h2><span className="save-note">{life.events.length} записей</span></div>
-            <div className="panel-body"><div className="events-list" data-testid="display-events">
-              {life.events.length ? life.events.map((event) => <article className="event-row" key={event.id} data-testid={`event-${event.id}`}>
-                <div className="event-age">{event.age === 0 ? 'рождение' : `${event.age} лет`}</div>
-                <div><h3>{event.title}</h3><p>{event.outcome || event.description}</p>
-                  {event.choices && !event.outcome && <div className="choice-box">{event.choices.map((choice, index) =>
-                    <button className="choice-btn" key={choice.label} onClick={() => choose(event.id, index)} data-testid={`choice-${event.id}-${index}`}>{choice.label}</button>)}</div>}
+        </section>
+
+        <EnvironmentScene life={life} />
+        <CharacterStatus life={life} />
+
+        <TimeControls
+          currentDate={life.currentDate}
+          playing={playing}
+          speed={speed}
+          locked={Boolean(pendingDecision)}
+          onToggle={() => setPlaying((value) => !value)}
+          onSpeedChange={cycleSpeed}
+          onAdvanceMonth={() => applyAction(safeAdvanceAction, 1)}
+          onAdvanceYear={() => applyAction(safeAdvanceAction, 12)}
+        />
+
+        <div className="nr-content-grid">
+          <LifeJournal events={life.events} />
+          <aside className="nr-context">
+            <section className="nr-context-block">
+              <div className="nr-eyebrow">ЧЕМ ЗАНЯТЬСЯ</div>
+              <div className="nr-quick-actions" data-testid="display-actions">
+                {actions.map((action) => (
+                  <button
+                    className="nr-quick-action"
+                    key={action.id}
+                    type="button"
+                    onClick={() => applyAction(action.id)}
+                    disabled={Boolean(pendingDecision)}
+                    data-testid={`action-${action.id}`}
+                  >
+                    <strong>{action.title}</strong>
+                    <span>{action.description}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="nr-context-block" data-testid="display-family">
+              <div className="nr-eyebrow"><Heart size={13} /> СЕЙЧАС РЯДОМ</div>
+              {life.family.map((person) => (
+                <div className="nr-person" key={person.id} data-testid={`family-${person.id}`}>
+                  <div className="nr-avatar">{person.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</div>
+                  <div>
+                    <strong>{person.name}</strong>
+                    <span>{person.relationship} · {person.age} лет</span>
+                    <span>{person.occupation}, {person.personality}</span>
+                  </div>
                 </div>
-              </article>) : <div className="empty-events">Пока здесь тихо. Первые события появятся совсем скоро.</div>}
-            </div></div>
-          </section>
-        </section>
-        <aside className="side-column">
-          <section className="panel">
-            <div className="panel-head"><h2>ТВОЯ СЕМЬЯ</h2><Heart size={16} /></div>
-            <div className="panel-body"><div className="family-list">
-              {life.family.map((person) => <div className="family-person" key={person.id} data-testid={`family-${person.id}`}>
-                <div className="portrait">{person.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</div>
-                <div><div className="person-name">{person.name}</div><div className="person-meta">{person.relationship} · {person.age} лет</div><div className="person-meta">{person.occupation}, {person.personality}</div></div>
-              </div>)}
-            </div></div>
-          </section>
-          <section className="panel">
-            <div className="panel-head"><h2>УСЛОВИЯ ЖИЗНИ</h2><House size={17} /></div>
-            <div className="panel-body">
-              <div className="record-line"><span>Дом</span><strong>{life.conditions.home}</strong></div>
-              <div className="record-line"><span>Достаток</span><strong>{life.conditions.className}</strong></div>
-              <div className="record-line"><span>Регион</span><strong>{life.location.region}, {life.location.country}</strong></div>
-              <div className="conditions" style={{ marginTop: 12 }}>{life.conditions.resources.map((resource) => <span className="condition-tag" key={resource}><Leaf size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />{resource}</span>)}</div>
-            </div>
-          </section>
-          <section className="panel">
-            <div className="panel-head"><h2>СОСТОЯНИЕ</h2><Sparkles size={16} /></div>
-            <div className="panel-body">
-              <StatLabel label="Возраст" value={life.age} />
-              <StatLabel label="Дней в истории" value={Math.floor((new Date(`${life.currentDate}T12:00:00`).getTime() - new Date(`${life.birthDate}T12:00:00`).getTime()) / 86400000)} />
-              <div className="save-note" style={{ marginTop: 12 }}><Save size={14} />Автосохранение включено</div>
-            </div>
-          </section>
-        </aside>
-      </div>
-    </div>
-    {showRestart && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowRestart(false); }}>
-      <section className="modal" role="dialog" aria-modal="true" aria-labelledby="restart-title">
-        <h2 id="restart-title">НАЧАТЬ НОВУЮ ЖИЗНЬ?</h2>
-        <p>Текущая история будет заменена. Ты сможешь создать новое случайное рождение.</p>
-        <div className="modal-actions">
-          <button className="pixel-button secondary" onClick={() => setShowRestart(false)} data-testid="button-cancel-new-life"><X size={15} style={{ verticalAlign: 'middle', marginRight: 5 }} />Остаться</button>
-          <button className="pixel-button gold" onClick={newLife} data-testid="button-confirm-new-life">Начать заново</button>
+              ))}
+            </section>
+
+            <section className="nr-context-block">
+              <div className="nr-eyebrow"><Home size={13} /> УСЛОВИЯ ЖИЗНИ</div>
+              <div className="nr-context-detail">{life.conditions.home}</div>
+              <div className="nr-context-detail">{life.conditions.className}</div>
+              <div className="nr-context-rule">
+                {life.conditions.resources.map((resource) => <span key={resource}>{resource}</span>)}
+              </div>
+            </section>
+
+            <section className="nr-scene-slot" aria-label="Будущие особые эпизоды">
+              <div className="nr-scene-slot-top"><span className="nr-slot-mark">▧</span> ОСОБЫЙ ЭПИЗОД</div>
+              <strong>Момент, который останется</strong>
+              <span>Архитектура дневника готова для будущих кат-сцен и мини-игр.</span>
+            </section>
+          </aside>
         </div>
-      </section>
-    </div>}
-    {toast && <div className="toast-note" role="status">{toast}</div>}
-  </main>;
+      </div>
+
+      <footer className="nr-footer">
+        <span>NO RULES <i /> Одна жизнь. Без готового сценария.</span>
+        <span>{formattedDate.toUpperCase()} · {ageInRussian(life.age).toUpperCase()}</span>
+      </footer>
+
+      <DecisionModal event={pendingDecision} onChoose={choose} />
+
+      {showRestart && (
+        <div
+          className="nr-confirm-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setShowRestart(false);
+          }}
+        >
+          <section className="nr-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="restart-title">
+            <h2 id="restart-title">НАЧАТЬ НОВУЮ ЖИЗНЬ?</h2>
+            <p>Текущая история и сохранение будут заменены. Можно будет сгенерировать новое случайное рождение.</p>
+            <div className="nr-confirm-actions">
+              <button className="nr-control" type="button" onClick={() => setShowRestart(false)} data-testid="button-cancel-new-life">
+                <X size={15} /> Остаться
+              </button>
+              <button className="nr-control nr-main-control" type="button" onClick={newLife} data-testid="button-confirm-new-life">
+                Начать заново <ArrowRight size={15} />
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+      {toast && <div className="nr-toast" role="status">{toast}</div>}
+    </main>
+  );
 }

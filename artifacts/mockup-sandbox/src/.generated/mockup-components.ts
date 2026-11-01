@@ -2,5 +2,10 @@
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 export const modules: ModuleMap = {
   "./components/mockups/no-rules/Current.tsx": () => import("../components/mockups/no-rules/Current.tsx"),
-  "./components/mockups/no-rules/Journal.tsx": () => import("../components/mockups/no-rules/Journal.tsx")
+  "./components/mockups/no-rules/Journal.tsx": () => import("../components/mockups/no-rules/Journal.tsx"),
+  "./components/mockups/no-rules/components/game/CharacterStatus.tsx": () => import("../components/mockups/no-rules/components/game/CharacterStatus.tsx"),
+  "./components/mockups/no-rules/components/game/DecisionModal.tsx": () => import("../components/mockups/no-rules/components/game/DecisionModal.tsx"),
+  "./components/mockups/no-rules/components/game/EnvironmentScene.tsx": () => import("../components/mockups/no-rules/components/game/EnvironmentScene.tsx"),
+  "./components/mockups/no-rules/components/game/LifeJournal.tsx": () => import("../components/mockups/no-rules/components/game/LifeJournal.tsx"),
+  "./components/mockups/no-rules/components/game/TimeControls.tsx": () => import("../components/mockups/no-rules/components/game/TimeControls.tsx")
 };

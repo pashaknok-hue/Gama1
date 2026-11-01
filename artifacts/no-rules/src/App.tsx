@@ -3,8 +3,6 @@ import {
   ArrowRight,
   BookOpen,
   FolderOpen,
-  Heart,
-  Home,
   Leaf,
   RotateCcw,
   Save,
@@ -14,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import CharacterStatus from './components/game/CharacterStatus';
+import ActionsModal from './components/game/ActionsModal';
 import DecisionModal from './components/game/DecisionModal';
 import EnvironmentScene from './components/game/EnvironmentScene';
 import LifeJournal from './components/game/LifeJournal';
@@ -29,14 +28,6 @@ import {
 } from './game/simulation';
 import { clearLife, loadLife, saveLife } from './game/storage';
 import './game-ui.css';
-
-function ageInRussian(age: number) {
-  if (age === 0) return 'первый год';
-  const lastTwo = age % 100;
-  const last = age % 10;
-  const noun = lastTwo >= 11 && lastTwo <= 14 ? 'лет' : last === 1 ? 'год' : last >= 2 && last <= 4 ? 'года' : 'лет';
-  return `${age} ${noun}`;
-}
 
 function chapterName(age: number) {
   if (age < 3) return 'ПЕРВЫЕ ГОДЫ';
@@ -191,6 +182,7 @@ export default function App() {
   const [profile, setProfile] = useState<BirthProfile>(() => generateBirthProfile());
   const [life, setLife] = useState<Life | null>(null);
   const [showRestart, setShowRestart] = useState(false);
+  const [showActions, setShowActions] = useState(false);
   const [toast, setToast] = useState('');
   const [hasSave, setHasSave] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -201,9 +193,6 @@ export default function App() {
   const safeAdvanceAction = life
     ? actions.find((action) => action.id === 'sleep')?.id ?? actions[0]?.id ?? 'cuddle'
     : 'cuddle';
-  const formattedDate = life
-    ? new Date(`${life.currentDate}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
-    : '';
 
   useEffect(() => {
     setHasSave(Boolean(loadLife()));
@@ -298,7 +287,7 @@ export default function App() {
   }
 
   return (
-    <main className="nr-journal">
+    <main className="nr-journal nr-game-screen">
       <div className="nr-grain" aria-hidden="true" />
       <header className="nr-topbar">
         <Logo />
@@ -327,6 +316,10 @@ export default function App() {
             <div className="nr-character-sub">
               {life.character.traits.join(' · ')} <i /> {life.location.region}, {life.location.country}
             </div>
+            <div className="nr-character-family" data-testid="display-family">
+              <span>рядом:</span>{' '}
+              {life.family.map((person) => `${person.relationship.toLowerCase()} ${person.name.split(' ')[0]}`).join(' · ')}
+            </div>
           </div>
           <div className="nr-age-stamp" data-testid="display-age">
             <span>ВОЗРАСТ</span>
@@ -345,70 +338,27 @@ export default function App() {
           locked={Boolean(pendingDecision)}
           onToggle={() => setPlaying((value) => !value)}
           onSpeedChange={cycleSpeed}
+          onOpenActions={() => setShowActions(true)}
           onAdvanceMonth={() => applyAction(safeAdvanceAction, 1)}
           onAdvanceYear={() => applyAction(safeAdvanceAction, 12)}
         />
 
         <div className="nr-content-grid">
           <LifeJournal events={life.events} />
-          <aside className="nr-context">
-            <section className="nr-context-block">
-              <div className="nr-eyebrow">ЧЕМ ЗАНЯТЬСЯ</div>
-              <div className="nr-quick-actions" data-testid="display-actions">
-                {actions.map((action) => (
-                  <button
-                    className="nr-quick-action"
-                    key={action.id}
-                    type="button"
-                    onClick={() => applyAction(action.id)}
-                    disabled={Boolean(pendingDecision)}
-                    data-testid={`action-${action.id}`}
-                  >
-                    <strong>{action.title}</strong>
-                    <span>{action.description}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section className="nr-context-block" data-testid="display-family">
-              <div className="nr-eyebrow"><Heart size={13} /> СЕЙЧАС РЯДОМ</div>
-              {life.family.map((person) => (
-                <div className="nr-person" key={person.id} data-testid={`family-${person.id}`}>
-                  <div className="nr-avatar">{person.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</div>
-                  <div>
-                    <strong>{person.name}</strong>
-                    <span>{person.relationship} · {person.age} лет</span>
-                    <span>{person.occupation}, {person.personality}</span>
-                  </div>
-                </div>
-              ))}
-            </section>
-
-            <section className="nr-context-block">
-              <div className="nr-eyebrow"><Home size={13} /> УСЛОВИЯ ЖИЗНИ</div>
-              <div className="nr-context-detail">{life.conditions.home}</div>
-              <div className="nr-context-detail">{life.conditions.className}</div>
-              <div className="nr-context-rule">
-                {life.conditions.resources.map((resource) => <span key={resource}>{resource}</span>)}
-              </div>
-            </section>
-
-            <section className="nr-scene-slot" aria-label="Будущие особые эпизоды">
-              <div className="nr-scene-slot-top"><span className="nr-slot-mark">▧</span> ОСОБЫЙ ЭПИЗОД</div>
-              <strong>Момент, который останется</strong>
-              <span>Архитектура дневника готова для будущих кат-сцен и мини-игр.</span>
-            </section>
-          </aside>
         </div>
       </div>
 
-      <footer className="nr-footer">
-        <span>NO RULES <i /> Одна жизнь. Без готового сценария.</span>
-        <span>{formattedDate.toUpperCase()} · {ageInRussian(life.age).toUpperCase()}</span>
-      </footer>
-
       <DecisionModal event={pendingDecision} onChoose={choose} />
+      {showActions && (
+        <ActionsModal
+          actions={actions}
+          onSelect={(actionId) => {
+            applyAction(actionId);
+            setShowActions(false);
+          }}
+          onClose={() => setShowActions(false)}
+        />
+      )}
 
       {showRestart && (
         <div

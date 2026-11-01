@@ -1,4 +1,4 @@
-import { CalendarDays, FastForward, Pause, Play } from 'lucide-react';
+import { CalendarDays, FastForward, ListChecks, Pause, Play } from 'lucide-react';
 
 export type TimeSpeed = 1 | 2 | 4;
 
@@ -9,6 +9,7 @@ type TimeControlsProps = {
   locked: boolean;
   onToggle: () => void;
   onSpeedChange: () => void;
+  onOpenActions: () => void;
   onAdvanceMonth: () => void;
   onAdvanceYear: () => void;
 };
@@ -20,6 +21,7 @@ export default function TimeControls({
   locked,
   onToggle,
   onSpeedChange,
+  onOpenActions,
   onAdvanceMonth,
   onAdvanceYear,
 }: TimeControlsProps) {
@@ -61,6 +63,17 @@ export default function TimeControls({
         >
           <FastForward size={15} fill="currentColor" />
           <span>{speed}×</span>
+        </button>
+        <button
+          className="nr-control nr-action-menu-control"
+          type="button"
+          onClick={onOpenActions}
+          disabled={locked}
+          aria-label="Выбрать действие"
+          data-testid="button-open-actions"
+        >
+          <ListChecks size={15} />
+          <span>Действия</span>
         </button>
         <div className="nr-manual-time">
           <button className="nr-control" type="button" onClick={onAdvanceMonth} disabled={locked} data-testid="button-next-month">
