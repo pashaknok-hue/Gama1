@@ -27,7 +27,12 @@ import {
   type ActionId,
 } from './game/simulation';
 import { clearLife, loadLife, saveLife } from './game/storage';
+import { useGameClock } from './hooks/use-game-clock';
+import worldCoverage from '../data/COVERAGE.md?url';
+import worldDataNotice from '../data/NOTICE.md?url';
 import './game-ui.css';
+
+type BirthDistribution = { weighting: 'uniform' | 'population'; includeTerritories: boolean };
 
 function chapterName(age: number) {
   if (age < 3) return 'ПЕРВЫЕ ГОДЫ';
@@ -71,12 +76,16 @@ function NewLifeScreen({
   onStart,
   onReroll,
   onResume,
+  distribution,
+  onDistributionChange,
 }: {
   profile: BirthProfile;
   hasSave: boolean;
   onStart: () => void;
   onReroll: () => void;
   onResume: () => void;
+  distribution: BirthDistribution;
+  onDistributionChange: (distribution: BirthDistribution) => void;
 }) {
   return (
     <main className="nr-journal nr-setup">
@@ -108,6 +117,21 @@ function NewLifeScreen({
                 <Shuffle size={15} /> Другая судьба
               </button>
             </div>
+            <div className="nr-birth-settings" aria-label="Выбор рождения">
+              <label>
+                Выбор страны
+                <select aria-label="Распределение стран" value={distribution.weighting}
+                  onChange={(event) => onDistributionChange({ ...distribution, weighting: event.target.value as BirthDistribution['weighting'] })}>
+                  <option value="uniform">Равные шансы стран</option>
+                  <option value="population">С учётом населения</option>
+                </select>
+              </label>
+              <label className="nr-territories-toggle">
+                <input type="checkbox" checked={distribution.includeTerritories}
+                  onChange={(event) => onDistributionChange({ ...distribution, includeTerritories: event.target.checked })} />
+                Включать дополнительные территории
+              </label>
+            </div>
           </div>
           <div className="nr-setup-scene">
             <EnvironmentScene profile={profile} />
@@ -122,13 +146,13 @@ function NewLifeScreen({
             </div>
             <div className="nr-setup-data">
               <div className="nr-setup-line" data-testid="display-character">
-                <span>Имя ребёнка</span><strong>{profile.character.name}</strong>
+                <span>Имя ребёнка</span><strong><bdi>{profile.character.name}</bdi></strong>
               </div>
               <div className="nr-setup-line">
                 <span>Пол</span><strong>{profile.character.gender}</strong>
               </div>
               <div className="nr-setup-line" data-testid="display-birthplace">
-                <span>Место рождения</span><strong>{profile.region}, {profile.country}</strong>
+                <span>Место рождения</span><strong>{[profile.birthplace?.settlement, profile.region === 'Регион не указан' ? null : profile.region, profile.country].filter(Boolean).join(', ')}</strong>
               </div>
               <div className="nr-setup-line">
                 <span>Семейный достаток</span><strong>{profile.className}</strong>
@@ -137,10 +161,16 @@ function NewLifeScreen({
                 <span>Дом</span><strong>{profile.home}</strong>
               </div>
             </div>
+            {profile.character.personalName?.status === 'missing' && (
+              <p className="nr-naming-note" role="status">Для этого места пока нет проверенного набора имён. Имена семьи не указаны.</p>
+            )}
+            {profile.character.personalName?.status === 'sourced' && profile.character.personalName.russianSpelling !== 'complete' && (
+              <p className="nr-naming-note">Там, где русское написание неизвестно, сохранено исходное имя.</p>
+            )}
             <div className="nr-setup-family">
               {profile.family.map((person) => (
                 <span className="nr-setup-chip" key={person.id}>
-                  {person.relationship}: {person.name}
+                  {person.relationship}: <bdi>{person.name}</bdi>
                 </span>
               ))}
             </div>
@@ -172,6 +202,7 @@ function NewLifeScreen({
         <footer className="nr-setup-footer">
           <span>Случайное рождение. Настоящие последствия. Только твой выбор.</span>
           <span><BookOpen size={14} /> История хранится на этом устройстве.</span>
+          <span><a href={worldCoverage} target="_blank" rel="noreferrer">Страны и данные имён</a> · <a href={worldDataNotice} target="_blank" rel="noreferrer">Источники</a></span>
         </footer>
       </div>
     </main>
@@ -179,6 +210,7 @@ function NewLifeScreen({
 }
 
 export default function App() {
+  const [birthDistribution, setBirthDistribution] = useState<BirthDistribution>({ weighting: 'uniform', includeTerritories: false });
   const [profile, setProfile] = useState<BirthProfile>(() => generateBirthProfile());
   const [life, setLife] = useState<Life | null>(null);
   const [showRestart, setShowRestart] = useState(false);
@@ -212,25 +244,26 @@ export default function App() {
     if (pendingDecision) setPlaying(false);
   }, [pendingDecision?.id]);
 
-  useEffect(() => {
-    if (!life || !playing || pendingDecision) return undefined;
-    const timer = window.setInterval(() => {
+  useGameClock({
+    lifeId: life?.id,
+    running: playing && !pendingDecision,
+    speed,
+    onTick: () => {
       setLife((current) => {
-        if (!current) return current;
-        const next = structuredClone(current);
-        return advance(next, automaticAction(current), 1);
+        if (!current || current.events.some((event) => event.choices?.length && !event.outcome)) return current;
+        return advance(structuredClone(current), automaticAction(current), 1);
       });
-    }, 10000 / speed);
-    return () => window.clearInterval(timer);
-  }, [life?.id, life?.age, playing, speed, pendingDecision?.id]);
+    },
+  });
 
   const startLife = () => {
-    setPlaying(false);
+    setSpeed(1);
+    setPlaying(true);
     setLife(makeLife(profile));
     setToast('История началась. Автосохранение включено.');
   };
 
-  const reroll = () => setProfile(generateBirthProfile());
+  const reroll = () => setProfile(generateBirthProfile(birthDistribution));
 
   const applyAction = (actionId: ActionId, months = 1) => {
     if (!life || pendingDecision) return;
@@ -248,7 +281,7 @@ export default function App() {
   const resume = () => {
     const savedLife = loadLife();
     if (savedLife) {
-      setPlaying(false);
+      setPlaying(!savedLife.events.some((event) => event.choices?.length && !event.outcome));
       setLife(savedLife);
       setToast('Сохранённая история открыта.');
     } else {
@@ -269,7 +302,7 @@ export default function App() {
     setHasSave(false);
     setPlaying(false);
     setLife(null);
-    setProfile(generateBirthProfile());
+    setProfile(generateBirthProfile(birthDistribution));
     setShowRestart(false);
   };
 
@@ -280,7 +313,11 @@ export default function App() {
   if (!life) {
     return (
       <>
-        <NewLifeScreen profile={profile} hasSave={hasSave} onStart={startLife} onReroll={reroll} onResume={resume} />
+        <NewLifeScreen profile={profile} hasSave={hasSave} onStart={startLife} onReroll={reroll} onResume={resume}
+          distribution={birthDistribution} onDistributionChange={(distribution) => {
+            setBirthDistribution(distribution);
+            setProfile(generateBirthProfile(distribution));
+          }} />
         {toast && <div className="nr-toast" role="status">{toast}</div>}
       </>
     );
@@ -312,13 +349,13 @@ export default function App() {
         <section className="nr-character-row">
           <div>
             <div className="nr-eyebrow">ТВОЯ ИСТОРИЯ · {chapterName(life.age)}</div>
-            <h1>{life.character.name.toUpperCase()}</h1>
+            <h1><bdi>{life.character.name}</bdi></h1>
             <div className="nr-character-sub">
-              {life.character.traits.join(' · ')} <i /> {life.location.region}, {life.location.country}
+              {life.character.traits.join(' · ')} <i /> {[life.location.birthplace?.settlement, life.location.region === 'Регион не указан' ? null : life.location.region, life.location.country].filter(Boolean).join(', ')}
             </div>
             <div className="nr-character-family" data-testid="display-family">
               <span>рядом:</span>{' '}
-              {life.family.map((person) => `${person.relationship.toLowerCase()} ${person.name.split(' ')[0]}`).join(' · ')}
+              {life.family.map((person, index) => <span key={person.id}>{index > 0 && ' · '}{person.relationship.toLowerCase()} <bdi>{person.name}</bdi></span>)}
             </div>
           </div>
           <div className="nr-age-stamp" data-testid="display-age">

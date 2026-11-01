@@ -10,7 +10,9 @@ function eventDate(date: string) {
 }
 
 export default function LifeJournal({ events }: { events: LifeEvent[] }) {
-  const entries = events;
+  // Sort a copy: keep saved progress and the simulator's event array untouched.
+  // Stable sorting retains the existing newest-first order within a date.
+  const entries = [...events].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <section className="nr-feed" aria-labelledby="nr-feed-title">
@@ -24,7 +26,7 @@ export default function LifeJournal({ events }: { events: LifeEvent[] }) {
         <span className="nr-entry-count">{events.length} {events.length === 1 ? 'ЗАПИСЬ' : 'ЗАПИСЕЙ'}</span>
       </div>
 
-      <div className="nr-timeline" data-testid="display-events" aria-live="polite">
+      <div className="nr-timeline" data-testid="display-events" tabIndex={0} role="region" aria-label="События: сначала новые" aria-live="polite">
         {entries.length ? entries.map((event, index) => (
           <article className="nr-entry" key={event.id} data-testid={`event-${event.id}`}>
             <div className="nr-entry-rail">

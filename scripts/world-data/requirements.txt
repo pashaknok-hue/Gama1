@@ -1,0 +1,3 @@
+Faker==37.12.0
+mimesis==18.0.0
+tzdata==2026.6

@@ -40,7 +40,7 @@ export default function TimeControls({
       <div className="nr-time-controls">
         <span className={`nr-time-state ${playing ? 'is-playing' : ''}`} data-testid="status-time">
           <i />
-          {locked ? 'ВАЖНОЕ РЕШЕНИЕ' : playing ? 'ВРЕМЯ ИДЁТ' : 'ПАУЗА'}
+          {locked ? 'ВЫБОР' : playing ? 'ВРЕМЯ ИДЁТ' : 'ПАУЗА'}
         </span>
         <button
           className="nr-control nr-main-control"
@@ -76,10 +76,10 @@ export default function TimeControls({
           <span>Действия</span>
         </button>
         <div className="nr-manual-time">
-          <button className="nr-control" type="button" onClick={onAdvanceMonth} disabled={locked} data-testid="button-next-month">
-            + месяц
+          <button className="nr-control" type="button" onClick={onAdvanceMonth} disabled={locked} aria-label="Прожить следующий месяц" data-testid="button-next-month">
+            + мес.
           </button>
-          <button className="nr-control" type="button" onClick={onAdvanceYear} disabled={locked} data-testid="button-next-year">
+          <button className="nr-control" type="button" onClick={onAdvanceYear} disabled={locked} aria-label="Прожить следующий год" data-testid="button-next-year">
             + год
           </button>
         </div>
