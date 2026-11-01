@@ -1,4 +1,4 @@
-import { birthDescription, birthdayDescription, embraceDescription } from './event-text';
+import { birthDescription, birthdayDescription, embraceDescription, characterSubject } from './event-text';
 import { dateAge } from './generation';
 import type { BirthProfile, Life, LifeEvent, Stats } from './domain';
 
@@ -14,7 +14,7 @@ export function makeLife(profile: BirthProfile): Life {
   const now = new Date().toISOString();
   return {
     id: randomId(), character: profile.character, birthDate,
-    location: { country: profile.country, region: profile.region }, family: profile.family,
+    location: { country: profile.country, region: profile.region, ...(profile.birthplace ? { birthplace: profile.birthplace } : {}) }, family: profile.family,
     conditions: { className: profile.className, home: profile.home, resources: profile.resources },
     currentDate: birthDate, age: 0,
     stats: { health: 82, happiness: 68, curiosity: 36, energy: 76 }, events: [birth], createdAt: now, updatedAt: now,
@@ -48,9 +48,9 @@ function addEvent(life: Life, title: string, description: string, effects?: Part
 }
 
 function maybeMilestone(life: Life): Life {
-  if (life.age === 1) return addEvent(life, 'Первые шаги', `${birthdayDescription(life.character, life.age)} ${life.character.name} делает первые неуверенные шаги. Весь дом на мгновение замер.`);
+  if (life.age === 1) return addEvent(life, 'Первые шаги', `${birthdayDescription(life.character, life.age)} ${characterSubject(life.character)} делает первые неуверенные шаги. Весь дом на мгновение замер.`);
   if (life.age === 3) return addEvent(life, 'Первое большое «почему?»', `${birthdayDescription(life.character, life.age)} Вопросов становится всё больше, а мир — всё интереснее.`);
-  if (life.age === 6) return addEvent(life, 'Новая глава', `${birthdayDescription(life.character, life.age)} ${life.character.name} впервые переступает порог школы.`);
+  if (life.age === 6) return addEvent(life, 'Новая глава', `${birthdayDescription(life.character, life.age)} ${characterSubject(life.character)} впервые переступает порог школы.`);
   if (life.age === 13) return addEvent(life, 'Свои решения', 'Всё чаще хочется самому выбирать, как провести день.');
   if (life.age === 18) return addEvent(life, 'Взрослая жизнь', 'Перед тобой открывается больше дорог, чем прежде.');
   return life;

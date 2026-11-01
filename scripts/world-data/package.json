@@ -1,0 +1,1 @@
+{"name":"no-rules-world-data-import","private":true,"type":"module","dependencies":{"@faker-js/faker":"10.1.0","world-countries":"5.1.0"}}

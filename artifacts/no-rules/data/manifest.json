@@ -1,0 +1,49 @@
+{
+  "sources": {
+    "countries": {
+      "package": "world-countries@5.1.0",
+      "url": "https://github.com/mledoze/countries",
+      "license": "ODbL-1.0"
+    },
+    "names": {
+      "package": "@faker-js/faker@10.1.0",
+      "url": "https://github.com/faker-js/faker",
+      "license": "MIT"
+    },
+    "mimesisNames": {
+      "package": "mimesis==18.0.0",
+      "url": "https://github.com/lk-geimfari/mimesis",
+      "license": "MIT"
+    },
+    "pythonNames": {
+      "package": "Faker==37.12.0",
+      "url": "https://github.com/joke2k/faker",
+      "license": "MIT"
+    },
+    "russianSpellings": {
+      "url": "https://www.wikidata.org/",
+      "license": "CC0-1.0",
+      "records": 11606,
+      "unavailableBatches": 30
+    },
+    "geography": {
+      "url": "https://download.geonames.org/export/dump/",
+      "license": "CC-BY-4.0"
+    },
+    "unMembershipCorrection": "https://www.un.org/en/about-us/non-member-states"
+  },
+  "sha256": {
+    "countryInfo.txt": "79f8f59ea01cbb40438bf1856dd6c2ff201f03f8fc72d0530b2646aaf603ef04",
+    "admin1.txt": "42458864faa9887933d75c33408d4a808b765edbcd62a1328fa9e8cfcdfc718e",
+    "cities500.zip": "682735b48088323973056d9c84426e2415a63d4cd2d8239f1c50966ca171d3d0",
+    "faker.json": "d7c4d9a60f5db9a84bb304ceb2a485f4f987517293173218152f3ec9e8f23e43",
+    "python-faker.json": "a86185e3f2c968841306f461b517526a7d00923437c92803a2a5ddbc354e2802",
+    "mimesis.json": "1c177426397c5306927a5d42e12270de2192d2d0dbc1b4af87dd216dc8af013f",
+    "wikidata-russian.json": "58dbb13b2cebbe873394c3a3483b3bf238853dcd889d8e8a2d6962db540cda21"
+  },
+  "unMembers": 193,
+  "countriesAndTerritories": 250,
+  "settlements": 12778,
+  "nameCountries": 99,
+  "nameLocales": 87
+}

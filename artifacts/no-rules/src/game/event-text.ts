@@ -1,17 +1,28 @@
 import type { BirthProfile, Character } from './domain';
 import { nameInCase } from './names';
 
+export function isolateName(name: string): string {
+  return /[\u0590-\u08ff]/.test(name) ? `\u2068${name}\u2069` : name;
+}
+
+export function characterSubject(character: Character): string {
+  return character.personalName?.status === 'missing' && character.name === 'Имя не указано' ? 'Ребёнок' : isolateName(character.name);
+}
+
 export function birthDescription(profile: BirthProfile): string {
   const verb = profile.character.gender === 'Девочка' ? 'Родилась' : 'Родился';
-  const family = profile.family.map((member) => `${member.relationship.toLowerCase()} — ${member.name}`).join('; ');
-  return `${verb} ${profile.character.name}. Семья: ${family}. Место рождения: ${profile.region}, ${profile.country}. Начинается новая история.`;
+  const family = profile.family.map((member) => `${member.relationship.toLowerCase()} — ${isolateName(member.name)}`).join('; ');
+  const subject = profile.character.personalName?.status === 'missing' && profile.character.name === 'Имя не указано'
+    ? profile.character.gender === 'Девочка' ? 'девочка' : 'мальчик'
+    : isolateName(profile.character.name);
+  return `${verb} ${subject}. Семья: ${family}. Место рождения: ${[profile.birthplace?.settlement, profile.region === 'Регион не указан' ? null : profile.region, profile.country].filter(Boolean).join(', ')}. Начинается новая история.`;
 }
 
 export function embraceDescription(character: Character): string {
   const accusative = nameInCase(character, 'accusative');
   return accusative
     ? `Мама обняла ${accusative}. Рядом тепло и спокойно.`
-    : `${character.name} чувствует тепло маминых объятий. Рядом спокойно.`;
+    : `${characterSubject(character)} чувствует тепло маминых объятий. Рядом спокойно.`;
 }
 
 export function birthdayDescription(character: Character, age: number): string {
@@ -24,5 +35,5 @@ export function birthdayDescription(character: Character, age: number): string {
   const dative = nameInCase(character, 'dative');
   return dative
     ? `${dative} ${singular ? 'исполнился' : 'исполнилось'} ${ageLabel}.`
-    : `${character.name} отмечает день рождения: ${ageLabel}.`;
+    : `${characterSubject(character)} отмечает день рождения: ${ageLabel}.`;
 }

@@ -851,3 +851,12 @@
   .nr-game-screen .nr-age-stamp { flex-direction: row; gap: 4px; }
   .nr-game-screen .nr-age-stamp span { display: none; }
 }
+
+.nr-naming-note { margin: 8px 0; color: var(--nr-muted); font-size: 16px; line-height: 1.2; }
+.nr-birth-settings { display: grid; gap: 6px; width: 100%; margin-top: 14px; color: var(--nr-copy); font-size: 17px; }
+.nr-birth-settings label { min-width: 0; }
+.nr-birth-settings select { display: block; width: 100%; min-height: 44px; padding: 5px 8px; margin-top: 3px; border: 1px solid var(--nr-line); background: var(--nr-bg); color: var(--nr-ink); font: inherit; font-size: 16px; }
+.nr-birth-settings .nr-territories-toggle { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.nr-territories-toggle input { flex-shrink: 0; width: 20px; height: 20px; accent-color: var(--nr-amber); }
+.nr-setup-footer { flex-wrap: wrap; }
+.nr-setup-footer a { color: var(--nr-amber); text-decoration: underline; text-underline-offset: 3px; }
