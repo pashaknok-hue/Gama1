@@ -1,0 +1,28 @@
+{
+  "lives": 1000,
+  "yearsPerLife": 85,
+  "months": 1020000,
+  "countries": 193,
+  "events": 1187750,
+  "decisions": 150320,
+  "saves": 6000,
+  "missingNamePlaceholders": 1668,
+  "paths": [
+    "budget-pressure",
+    "business-trial",
+    "community-path",
+    "creative-path",
+    "financial-reserve",
+    "friend-request",
+    "illegal-offer",
+    "job-offer",
+    "legal-response",
+    "repair-friendship",
+    "retirement",
+    "romantic-boundary",
+    "sport-routine",
+    "training-path"
+  ],
+  "failures": 0,
+  "durationSeconds": 144.068
+}

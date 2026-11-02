@@ -1,0 +1,112 @@
+{
+  "id": "regression-vadim-kyiv-20001203",
+  "character": {
+    "name": "Вадим Янюк",
+    "gender": "Мальчик",
+    "traits": [
+      "мягкий характер"
+    ]
+  },
+  "birthDate": "2000-12-03",
+  "location": {
+    "country": "Украина",
+    "region": "Kyiv City",
+    "birthplace": {
+      "countryCode": "UA",
+      "settlementId": 703448,
+      "settlement": "Kyiv",
+      "regionId": 703447,
+      "regionCode": "UA.12",
+      "population": 2952301,
+      "latitude": 50.45466,
+      "longitude": 30.5238,
+      "featureCode": "PPLC"
+    }
+  },
+  "family": [
+    {
+      "id": "0-eeeee",
+      "name": "Добромисла Кулинич",
+      "personalName": {
+        "givenName": "Добромисла",
+        "familyName": "Кулинич",
+        "nativeGivenName": "Добромисла",
+        "nativeFamilyName": "Кулинич",
+        "language": "uk",
+        "namingContext": "uk",
+        "source": "@faker-js/faker@10.1.0/uk",
+        "status": "sourced",
+        "russianSpelling": "unavailable",
+        "transcriptionSources": [],
+        "displayName": "Добромисла Кулинич",
+        "selection": "regional-or-country"
+      },
+      "relationship": "Мама",
+      "age": 30,
+      "occupation": "повар",
+      "personality": "терпеливая"
+    },
+    {
+      "id": "1-eeeee",
+      "name": "Добромир Кулинич",
+      "personalName": {
+        "givenName": "Добромир",
+        "familyName": "Кулинич",
+        "nativeGivenName": "Добромир",
+        "nativeFamilyName": "Кулинич",
+        "language": "uk",
+        "namingContext": "uk",
+        "source": "@faker-js/faker@10.1.0/uk",
+        "status": "sourced",
+        "russianSpelling": "unavailable",
+        "transcriptionSources": [],
+        "displayName": "Добромир Кулинич",
+        "selection": "regional-or-country"
+      },
+      "relationship": "Папа",
+      "age": 30,
+      "occupation": "водитель",
+      "personality": "весёлый"
+    }
+  ],
+  "conditions": {
+    "className": "Скромный достаток",
+    "home": "дом с маленьким садом",
+    "resources": [
+      "Книги на полке",
+      "Надёжный быт",
+      "Выходные вместе"
+    ]
+  },
+  "currentDate": "2000-12-03",
+  "age": 0,
+  "stats": {
+    "health": 82,
+    "happiness": 68,
+    "curiosity": 36,
+    "energy": 76
+  },
+  "events": [
+    {
+      "id": "birth-vadim-kyiv",
+      "date": "2000-12-03",
+      "age": 0,
+      "title": "Первый день",
+      "description": "Родился Вадим Янюк. Семья: мама — Добромисла Кулинич; папа — Добромир Кулинич. Место рождения: Kyiv, Kyiv City, Украина. Начинается новая история.",
+      "kind": "milestone",
+      "templateId": "birth",
+      "actor": {
+        "kind": "character",
+        "id": "regression-vadim-kyiv-20001203",
+        "name": "Вадим Янюк"
+      },
+      "target": {
+        "kind": "place",
+        "name": "Kyiv"
+      },
+      "context": "Рождение ребёнка в семье."
+    }
+  ],
+  "createdAt": "2000-12-03T12:00:00.000Z",
+  "updatedAt": "2000-12-03T12:00:00.000Z"
+}

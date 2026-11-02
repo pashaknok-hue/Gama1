@@ -84,13 +84,18 @@ with sync_playwright() as p:
     page.set_viewport_size({'width': 320, 'height': 568})
     page.get_by_test_id('button-open-actions').click()
     assert page.get_by_role('dialog').is_visible()
-    page.locator('.nr-action-option').first.click()
+    assert page.get_by_test_id('infant-actions-note').is_visible()
+    page.get_by_test_id('button-close-actions').click()
     assert page.get_by_role('dialog').count() == 0
     page.get_by_test_id('button-new-life').click()
     page.get_by_test_id('button-cancel-new-life').click()
     assert json.loads(page.evaluate("localStorage.getItem('no-rules-life-v1')"))['id'] == original_id
     print('PASS: actions dialog and cancel restart preserve current life')
-    fixture['events'].insert(0, {'id': 'decision-test', 'date': '2002-01-01', 'age': 1, 'title': 'Важный момент', 'description': 'Обычное семейное событие. ' * 7, 'choices': [{'label': f'Вариант {i + 1}: провести время с семьёй', 'result': 'День прошёл вместе с близкими.', 'effects': {'happiness': 2, 'energy': -1}} for i in range(4)]})
+    fixture.pop('simulation',None)
+    fixture['birthDate']='2001-01-01'
+    fixture['currentDate']='2004-01-01'
+    fixture['age']=3
+    fixture['events'].insert(0, {'id': 'decision-test', 'kind':'decision', 'eligibility':{'minAge':3,'maxAge':5}, 'date': '2004-01-01', 'age': 3, 'title': 'Важный момент', 'description': 'Обычное семейное событие. ' * 7, 'choices': [{'label': f'Вариант {i + 1}: провести время с семьёй', 'result': 'День прошёл вместе с близкими.', 'effects': {'happiness': 2, 'energy': -1}} for i in range(4)]})
     page.evaluate("data => localStorage.setItem('no-rules-life-v1',JSON.stringify(data))", fixture)
     page.reload()
     page.get_by_test_id('button-load-life').click()

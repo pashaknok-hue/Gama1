@@ -4,7 +4,7 @@ import { worldCountries, chooseBirthplace, settlementSize } from '../src/game/wo
 import { generateBirthProfile } from '../src/game/generation';
 import { generateFamilyNames, namePools, nameInCase } from '../src/game/names';
 import { russianSpelling } from '../src/game/name-transcription';
-import { makeLife, advance } from '../src/game/simulation';
+import { makeLife, advanceTime } from '../src/game/simulation';
 import { birthDescription, embraceDescription, birthdayDescription, isolateName } from '../src/game/event-text';
 import { loadLife, saveLife } from '../src/game/storage';
 import type { BirthProfile, Character } from '../src/game/domain';
@@ -34,11 +34,7 @@ function validateBirth(profile: BirthProfile) {
   assert.ok(Math.abs(place.latitude) <= 90 && Math.abs(place.longitude) <= 180);
   for (const [role, person] of [['character', profile.character], ...profile.family.map((member) => [member.relationship, member] as const)] as const) {
     const details = person.personalName!;
-    if (!country.nameLocales.length) {
-      assert.equal(details.status, 'missing');
-      assert.equal(person.name, 'Имя не указано');
-      continue;
-    }
+    if (!country.nameLocales.length) assert.ok(['language-group','reserve'].includes(details.selection!));
     assert.equal(details.status, 'sourced');
     const pool = namePools[details.namingContext];
     assert.ok(pool, 'Explicit source locale, never implicit English/Russian fallback');
@@ -86,7 +82,7 @@ test('10,000 actual random births: geographic/name/gender diversity, persistence
   assert.equal(genders.size, 2);
   assert.ok(names.size > 1000 && families.size > 500 && settlements.size > 1000);
   assert.ok(sizes.has('мегаполис') && sizes.has('малый населённый пункт'));
-  assert.ok(named > 0 && missing > 0);
+  assert.equal(named,10000);assert.equal(missing,0);
   console.log(JSON.stringify({randomBirths:10_000,countries:countries.size,settlements:settlements.size,names:names.size,familyNames:families.size,named,missing}));
 });
 
@@ -146,13 +142,14 @@ test('Regional corpora and multilingual families are selected explicitly', () =>
 test('Missing names and Russian spellings are explicit; no guessed transliteration or declension', () => {
   const missing = worldCountries.find((country) => country.unMember && !country.nameLocales.length)!;
   const profile = generateBirthProfile({countryCode:missing.code,random:randomSequence(77)});
-  assert.equal(profile.character.personalName?.status, 'missing');
+  assert.equal(profile.character.personalName?.status, 'sourced');
+  assert.ok(['language-group','reserve'].includes(profile.character.personalName!.selection!));
   assert.ok(!birthDescription(profile).includes('Родилась Имя не указано'));
   assert.ok(!birthDescription(profile).includes('Родился Имя не указано'));
   assert.equal(russianSpelling('Not-a-known-name-123','xx').name, 'Not-a-known-name-123');
   assert.equal(russianSpelling('Not-a-known-name-123','xx').verified, false);
   assert.equal(nameInCase(profile.character,'accusative'),null);
-  assert.ok(embraceDescription(profile.character).startsWith('Ребёнок чувствует'));
+  assert.ok(!embraceDescription(profile.character).includes('Имя не указано'));
 });
 
 test('Old names, multiword relatives, explicit lexical cases and historical journal survive reload', () => {
@@ -179,9 +176,9 @@ test('Birth and automatic life events use Russian grammar without mutating names
     const before = JSON.stringify(life.character);
     assert.equal(life.events[0].description,birthDescription(profile));
     life.birthDate = life.currentDate = '2001-01-01';
-    advance(life,'cuddle');
-    assert.equal(life.events[0].description,embraceDescription(life.character));
-    advance(life,'sleep',11);
+    advanceTime(life,1,()=>.99);
+    assert.ok(life.events[0].actor && life.events[0].target && life.events[0].context);
+    advanceTime(life,11,()=>.99);
     assert.equal(life.age,1);
     assert.ok(life.events.some((event) => event.title === 'Первые шаги'));
     assert.equal(JSON.stringify(life.character),before);

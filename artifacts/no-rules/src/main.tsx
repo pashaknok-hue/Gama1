@@ -1,3 +1,5 @@
+import PixelPrototype from './components/PixelPrototype';
+import './game-ui.css';
 import { createRoot } from 'react-dom/client';
 
 import App from './App';
@@ -12,6 +14,6 @@ createRoot(document.getElementById('root')!, {
   },
 }).render(
   <ErrorBoundary>
-    <App />
+    {/\/prototype\/?$/.test(window.location.pathname) ? <PixelPrototype /> : <App />}
   </ErrorBoundary>,
 );

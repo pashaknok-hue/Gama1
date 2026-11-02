@@ -1,0 +1,31 @@
+{
+  "lives": 1000,
+  "yearsPerLife": 85,
+  "months": 1020000,
+  "countries": 193,
+  "events": 713818,
+  "decisions": 155793,
+  "saves": 6000,
+  "missingNamePlaceholders": 1668,
+  "paths": [
+    "budget-pressure",
+    "business-trial",
+    "community-path",
+    "creative-path",
+    "financial-reserve",
+    "friend-request",
+    "illegal-offer",
+    "job-offer",
+    "legal-response",
+    "preschool-family",
+    "preschool-interest",
+    "preschool-sharing",
+    "repair-friendship",
+    "retirement",
+    "romantic-boundary",
+    "sport-routine",
+    "training-path"
+  ],
+  "failures": 0,
+  "durationSeconds": 121.064
+}

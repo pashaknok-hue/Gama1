@@ -1,3 +1,5 @@
+import { monthDurationMs } from './game/pacing';
+import { yearWord } from './game/event-text';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
@@ -21,11 +23,14 @@ import type { BirthProfile, Life } from './game/domain';
 import { generateBirthProfile } from './game/generation';
 import {
   advance,
+  advanceTime,
   availableActions,
   makeLife,
+  advanceToNextDecision,
   resolveChoice,
   type ActionId,
 } from './game/simulation';
+import { pendingDecision as getPendingDecision } from './game/event-rules';
 import { clearLife, loadLife, saveLife } from './game/storage';
 import { useGameClock } from './hooks/use-game-clock';
 import worldCoverage from '../data/COVERAGE.md?url';
@@ -39,23 +44,8 @@ function chapterName(age: number) {
   if (age < 7) return 'РАННЕЕ ДЕТСТВО';
   if (age < 13) return 'ДЕТСТВО';
   if (age < 18) return 'ПОДРОСТКОВЫЕ ГОДЫ';
+  if (age >= 65) return 'СТАРШИЙ ВОЗРАСТ';
   return 'ВЗРОСЛАЯ ЖИЗНЬ';
-}
-
-function automaticAction(life: Life): ActionId {
-  const actions = availableActions(life.age);
-  const preferred: ActionId = life.stats.energy < 28
-    ? 'sleep'
-    : life.age < 3
-      ? 'cuddle'
-      : life.stats.curiosity < 38 && life.age >= 3
-        ? 'read'
-        : life.age < 7
-          ? 'play'
-          : life.age < 18
-            ? 'learn'
-            : 'create';
-  return actions.find((action) => action.id === preferred)?.id ?? actions[0]?.id ?? 'sleep';
 }
 
 function Logo() {
@@ -199,6 +189,7 @@ function NewLifeScreen({
           </section>
         </div>
 
+        {profile.character.personalName?.selection && profile.character.personalName.selection !== 'regional-or-country' && <p className="nr-name-coverage" role="status">Имя выбрано из {profile.character.personalName.selection==='language-group'?'родственного языкового':'резервного'} набора ({profile.character.personalName.language}); местное происхождение не подтверждено.</p>}
         <footer className="nr-setup-footer">
           <span>Случайное рождение. Настоящие последствия. Только твой выбор.</span>
           <span><BookOpen size={14} /> История хранится на этом устройстве.</span>
@@ -218,13 +209,11 @@ export default function App() {
   const [toast, setToast] = useState('');
   const [hasSave, setHasSave] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [skipMode, setSkipMode] = useState(false);
   const [speed, setSpeed] = useState<TimeSpeed>(1);
 
-  const pendingDecision = life?.events.find((event) => event.choices?.length && !event.outcome) ?? null;
-  const actions = useMemo(() => life ? availableActions(life.age) : [], [life?.age]);
-  const safeAdvanceAction = life
-    ? actions.find((action) => action.id === 'sleep')?.id ?? actions[0]?.id ?? 'cuddle'
-    : 'cuddle';
+  const pendingDecision = getPendingDecision(life);
+  const actions = useMemo(() => life ? availableActions(life.age, life.stats) : [], [life?.age, life?.stats.energy]);
 
   useEffect(() => {
     setHasSave(Boolean(loadLife()));
@@ -237,27 +226,25 @@ export default function App() {
   }, [toast]);
 
   useEffect(() => {
-    if (life) setHasSave(saveLife(life));
-  }, [life]);
-
-  useEffect(() => {
-    if (pendingDecision) setPlaying(false);
-  }, [pendingDecision?.id]);
+    if (life) setHasSave(saveLife({...life, playback:{mode:skipMode?'choices':playing?'auto':'paused'}}));
+  }, [life, playing, skipMode]);
 
   useGameClock({
     lifeId: life?.id,
     running: playing && !pendingDecision,
-    speed,
+    speed: life && life.age < 18 ? 1 : speed,
+    monthDurationMs: monthDurationMs(life?.age ?? 0),
     onTick: () => {
       setLife((current) => {
-        if (!current || current.events.some((event) => event.choices?.length && !event.outcome)) return current;
-        return advance(structuredClone(current), automaticAction(current), 1);
+        if (!current || getPendingDecision(current)) return current;
+        return advanceTime(structuredClone(current), 1);
       });
     },
   });
 
   const startLife = () => {
     setSpeed(1);
+    setSkipMode(false);
     setPlaying(true);
     setLife(makeLife(profile));
     setToast('История началась. Автосохранение включено.');
@@ -271,17 +258,37 @@ export default function App() {
     setLife(advance(next, actionId, months));
   };
 
+  const passTime = (months: number) => {
+    if (!life || pendingDecision) return;
+    setLife(advanceTime(structuredClone(life), months));
+  };
+
+  const skipToChoice = () => {
+    if (!life || pendingDecision) return;
+    const next = structuredClone(life);
+    const months = advanceToNextDecision(next);
+    setSkipMode(true);
+    setLife(next);
+    setPlaying(false);
+    if (!getPendingDecision(next)) setToast(`За ${months} месяцев новых решений не возникло. Время остановлено.`);
+  };
+
   const choose = (eventId: string, choiceIndex: number) => {
     if (!life) return;
     const next = structuredClone(life);
-    setLife(resolveChoice(next, eventId, choiceIndex));
-    setPlaying(false);
+    const event=next.events.find(event=>event.id===eventId);
+    if(!event || event.outcome)return;
+    resolveChoice(next,eventId,choiceIndex);
+    if(!event.outcome)return;
+    if(skipMode)advanceToNextDecision(next);
+    setLife(next);
   };
 
   const resume = () => {
     const savedLife = loadLife();
     if (savedLife) {
-      setPlaying(!savedLife.events.some((event) => event.choices?.length && !event.outcome));
+      setSkipMode(savedLife.playback?.mode==='choices');
+      setPlaying((savedLife.playback?.mode??'auto')==='auto');
       setLife(savedLife);
       setToast('Сохранённая история открыта.');
     } else {
@@ -301,6 +308,7 @@ export default function App() {
     clearLife();
     setHasSave(false);
     setPlaying(false);
+    setSkipMode(false);
     setLife(null);
     setProfile(generateBirthProfile(birthDistribution));
     setShowRestart(false);
@@ -361,7 +369,7 @@ export default function App() {
           <div className="nr-age-stamp" data-testid="display-age">
             <span>ВОЗРАСТ</span>
             <strong>{life.age}</strong>
-            <small>{life.age === 1 ? 'год' : life.age > 1 && life.age < 5 ? 'года' : 'лет'}</small>
+            <small>{yearWord(life.age)}</small>
           </div>
         </section>
 
@@ -369,25 +377,29 @@ export default function App() {
         <CharacterStatus life={life} />
 
         <TimeControls
+          age={life.age}
+          onNextDecision={skipToChoice}
           currentDate={life.currentDate}
           playing={playing}
           speed={speed}
           locked={Boolean(pendingDecision)}
-          onToggle={() => setPlaying((value) => !value)}
+          onToggle={() => {setSkipMode(false);setPlaying((value) => !value);}}
           onSpeedChange={cycleSpeed}
           onOpenActions={() => setShowActions(true)}
-          onAdvanceMonth={() => applyAction(safeAdvanceAction, 1)}
-          onAdvanceYear={() => applyAction(safeAdvanceAction, 12)}
+          actionsAvailable={actions.length > 0}
+          onAdvanceMonth={() => passTime(1)}
+          onAdvanceYear={() => passTime(12)}
         />
 
         <div className="nr-content-grid">
-          <LifeJournal events={life.events} />
+          <LifeJournal events={life.events} life={life} />
         </div>
       </div>
 
-      <DecisionModal event={pendingDecision} onChoose={choose} />
+      <DecisionModal life={life} event={pendingDecision} onChoose={choose} skipMode={skipMode} onSkipMode={setSkipMode} />
       {showActions && (
         <ActionsModal
+          life={life}
           actions={actions}
           onSelect={(actionId) => {
             applyAction(actionId);

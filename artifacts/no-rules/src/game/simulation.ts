@@ -1,96 +1,369 @@
-import { birthDescription, birthdayDescription, embraceDescription, characterSubject } from './event-text';
+import { repairMissingNames } from './identity-repair';
+import { birthdayGift } from './finance';
+import { startProject } from './life-development';
+import { randomState, nextRandom } from './random';
+import { eventCategory } from './event-category';
+import { birthDescription, birthdayDescription, characterSubject } from './event-text';
+import { nextLifeMonth } from './calendar';
 import { dateAge } from './generation';
 import type { BirthProfile, Life, LifeEvent, Stats } from './domain';
+import { automaticEvent, protagonist, type EventDraft } from './life-events';
+import {
+  runCoreMonth,
+  coreDecision,
+  commitPlan,
+  observeEvent,
+  type CoreDraft,
+} from './causal-engine';
+import { ensureSimulation, applyEffects } from './causal-state';
+import { canDecide, pendingDecision } from './event-rules';
 
-const randomId = () => Math.random().toString(36).slice(2, 10);
-export function makeLife(profile: BirthProfile): Life {
-  const month = 1 + Math.floor(Math.random() * 12), day = 1 + Math.floor(Math.random() * 28);
-  const birthDate = `200${Math.floor(Math.random() * 9)}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  const dateLabel = new Date(`${birthDate}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+let idSequence = 0;
+const randomId = () =>
+  globalThis.crypto?.randomUUID?.() ??
+  `${Date.now().toString(36)}-${++idSequence}-${Math.random().toString(36).slice(2, 10)}`;
+export function makeLife(
+  profile: BirthProfile,
+  options: { random?: () => number; id?: string; now?: string } = {},
+): Life {
+  const random = options.random ?? Math.random;
+  const month = 1 + Math.floor(random() * 12),
+    day = 1 + Math.floor(random() * 28);
+  const birthDate = `200${Math.floor(random() * 9)}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const id = options.id ?? randomId(),
+    now = options.now ?? new Date().toISOString();
   const birth: LifeEvent = {
-    id: randomId(), date: birthDate, age: 0, title: 'Первый день',
+    id: randomId(),
+    date: birthDate,
+    age: 0,
+    title: 'Первый день',
     description: birthDescription(profile),
+    kind: 'milestone',
+    templateId: 'birth',
+    actor: { kind: 'character', id, name: profile.character.name },
+    target: { kind: 'place', name: profile.birthplace?.settlement ?? profile.region },
+    context: 'Рождение ребёнка в семье.',
   };
-  const now = new Date().toISOString();
-  return {
-    id: randomId(), character: profile.character, birthDate,
-    location: { country: profile.country, region: profile.region, ...(profile.birthplace ? { birthplace: profile.birthplace } : {}) }, family: profile.family,
+  const life: Life = {
+    id,
+    character: profile.character,
+    birthDate,
+    location: {
+      country: profile.country,
+      region: profile.region,
+      ...(profile.birthplace ? { birthplace: profile.birthplace } : {}),
+    },
+    family: profile.family,
     conditions: { className: profile.className, home: profile.home, resources: profile.resources },
-    currentDate: birthDate, age: 0,
-    stats: { health: 82, happiness: 68, curiosity: 36, energy: 76 }, events: [birth], createdAt: now, updatedAt: now,
+    currentDate: birthDate,
+    age: 0,
+    stats: { health: 82, happiness: 68, curiosity: 36, energy: 76 },
+    events: [birth],
+    createdAt: now,
+    updatedAt: now,
   };
+  ensureSimulation(life);
+  return life;
 }
-
 const actions = {
-  cuddle: { title: 'Обнять ребёнка', infant: true, description: 'Тепло и спокойствие рядом.', effects: { happiness: 7, health: 2, energy: -3 } },
-  walk: { title: 'Прогуляться', infant: true, description: 'Свежий воздух и новые звуки.', effects: { health: 5, curiosity: 4, energy: -5 } },
-  sleep: { title: 'Хорошо выспаться', infant: true, description: 'Набраться сил до завтра.', effects: { energy: 13, health: 2 } },
-  play: { title: 'Играть во дворе', minAge: 2, description: 'День, полный открытий.', effects: { happiness: 6, curiosity: 5, energy: -7 } },
-  read: { title: 'Рассматривать книгу', minAge: 3, description: 'Истории открывают целые миры.', effects: { curiosity: 8, happiness: 2, energy: -3 } },
-  learn: { title: 'Учиться новому', minAge: 6, description: 'Небольшой шаг к большому открытию.', effects: { curiosity: 7, energy: -5, happiness: 1 } },
-  help: { title: 'Помочь семье', minAge: 5, description: 'Дома стало немного уютнее.', effects: { happiness: 3, energy: -4 } },
-  explore: { title: 'Исследовать окрестности', minAge: 10, description: 'Новый маршрут, новые впечатления.', effects: { curiosity: 6, happiness: 4, energy: -8 } },
-  create: { title: 'Сделать что-то своё', minAge: 7, description: 'Идея обрела форму.', effects: { happiness: 5, curiosity: 4, energy: -4 } },
+  sleep: {
+    title: 'Отдохнуть',
+    description: 'Самостоятельно выбрать спокойный отдых.',
+    minAge: 3,
+    minEnergy: 0,
+    effects: { energy: 13, health: 2 },
+    target: 'Отдых дома',
+    narrative: 'отдыхает дома и восстанавливает силы.',
+  },
+  walk: {
+    title: 'Прогуляться',
+    description: 'До подросткового возраста — рядом со взрослым.',
+    minAge: 3,
+    minEnergy: 10,
+    effects: { health: 5, curiosity: 4, energy: -5 },
+    target: 'Прогулка возле дома',
+    narrative: 'выходит на знакомую прогулку возле дома.',
+  },
+  play: {
+    title: 'Поиграть',
+    description: 'Посильная игра; маленьким детям помогает взрослый.',
+    minAge: 3,
+    maxAge: 12,
+    minEnergy: 12,
+    effects: { happiness: 6, curiosity: 5, energy: -7 },
+    target: 'Игра',
+    narrative: 'играет в знакомую игру.',
+  },
+  read: {
+    title: 'Почитать или рассмотреть книгу',
+    description: 'Маленьким детям книгу читает взрослый.',
+    minAge: 3,
+    minEnergy: 5,
+    effects: { curiosity: 8, happiness: 2, energy: -3 },
+    target: 'Книга',
+    narrative: 'читает книгу и обдумывает новую историю.',
+  },
+  learn: {
+    title: 'Узнать что-то новое',
+    description: 'Посильное обучение по интересам.',
+    minAge: 6,
+    minEnergy: 8,
+    effects: { curiosity: 7, energy: -5, happiness: 1 },
+    target: 'Новая тема',
+    narrative: 'изучает новую тему и разбирает непонятные детали.',
+  },
+  help: {
+    title: 'Помочь дома',
+    description: 'Посильная часть общих домашних дел.',
+    minAge: 5,
+    minEnergy: 8,
+    effects: { happiness: 3, energy: -4 },
+    target: 'Домашние дела',
+    narrative: 'выполняет посильную часть общих домашних дел.',
+  },
+  explore: {
+    title: 'Изучить знакомый маршрут',
+    description: 'До 13 лет — только со взрослым.',
+    minAge: 10,
+    minEnergy: 20,
+    effects: { curiosity: 6, happiness: 4, energy: -8 },
+    target: 'Знакомый маршрут',
+    narrative: 'исследует новый участок знакомого маршрута.',
+  },
+  create: {
+    title: 'Заняться своим проектом',
+    description: 'Небольшая творческая задача по силам.',
+    minAge: 7,
+    minEnergy: 8,
+    effects: { happiness: 5, curiosity: 4, energy: -4 },
+    target: 'Личный проект',
+    narrative: 'работает над личным проектом и завершает небольшой этап.',
+  },
 } as const;
 export type ActionId = keyof typeof actions;
-export type ActionInfo = { id: ActionId; title: string; description: string; effects: Partial<Stats> };
-
-export function availableActions(age: number): ActionInfo[] {
-  return Object.entries(actions).filter(([, action]) => !('minAge' in action) || age >= action.minAge)
-    .map(([id, action]) => ({ id: id as ActionId, title: action.title, description: action.description, effects: action.effects }));
+export type ActionInfo = {
+  id: ActionId;
+  title: string;
+  description: string;
+  effects: Partial<Stats>;
+};
+export function availableActions(age: number, stats?: Stats): ActionInfo[] {
+  return Object.entries(actions)
+    .filter(
+      ([, action]) =>
+        age >= action.minAge &&
+        age <= ('maxAge' in action ? action.maxAge : Infinity) &&
+        (!stats || stats.energy >= action.minEnergy),
+    )
+    .map(([id, action]) => ({
+      id: id as ActionId,
+      title: action.title,
+      description: action.description,
+      effects: action.effects,
+    }));
 }
-const clamp = (value: number) => Math.max(0, Math.min(100, value));
-function addEvent(life: Life, title: string, description: string, effects?: Partial<Stats>): Life {
-  const event: LifeEvent = { id: randomId(), date: life.currentDate, age: life.age, title, description };
-  if (effects) for (const key of Object.keys(effects) as (keyof Stats)[]) life.stats[key] = clamp(life.stats[key] + (effects[key] ?? 0));
-  life.events.unshift(event);
-  return life;
+function effects(life: Life, change: Partial<Stats>) {
+  applyEffects(life, [{ stats: change }], 'ambient-tick', 'Ход повседневной жизни');
 }
-
-function maybeMilestone(life: Life): Life {
-  if (life.age === 1) return addEvent(life, 'Первые шаги', `${birthdayDescription(life.character, life.age)} ${characterSubject(life.character)} делает первые неуверенные шаги. Весь дом на мгновение замер.`);
-  if (life.age === 3) return addEvent(life, 'Первое большое «почему?»', `${birthdayDescription(life.character, life.age)} Вопросов становится всё больше, а мир — всё интереснее.`);
-  if (life.age === 6) return addEvent(life, 'Новая глава', `${birthdayDescription(life.character, life.age)} ${characterSubject(life.character)} впервые переступает порог школы.`);
-  if (life.age === 13) return addEvent(life, 'Свои решения', 'Всё чаще хочется самому выбирать, как провести день.');
-  if (life.age === 18) return addEvent(life, 'Взрослая жизнь', 'Перед тобой открывается больше дорог, чем прежде.');
-  return life;
+function record(life: Life, draft: CoreDraft) {
+  const { effects: change, ...event } = draft;
+  if (change) effects(life, change);
+  const recorded: LifeEvent = {
+    ...event,
+    id: draft.id ?? (life.rng ? `entry-${life.id}-${++life.rng.sequence}` : randomId()),
+    category: draft.category ?? eventCategory(draft.templateId),
+    date: life.currentDate,
+    age: life.age,
+    cause: draft.cause ?? {
+      ruleId: draft.templateId,
+      facts: [`Возраст: ${life.age}.`, draft.context],
+      sourceEventIds: [],
+    },
+    appliedConsequences: draft.appliedConsequences ?? (change ? [{ stats: change }] : []),
+  };
+  life.events.unshift(recorded);
+  if (recorded.kind === 'milestone' && /^(milestone-|birthday-)/.test(recorded.templateId ?? ''))
+    recorded.description += birthdayGift(life, ensureSimulation(life), recorded.id);
+  observeEvent(life, recorded);
+  return recorded;
 }
-function maybeChoice(life: Life): Life {
-  if (life.age < 3 || Math.random() > .23) return life;
-  const event: LifeEvent = {
-    id: randomId(), date: life.currentDate, age: life.age, title: 'После уроков',
-    description: 'Одноклассник зовёт тебя на кружок рисования. Дома ждут дела, но любопытство не отпускает.',
-    choices: [
-      { label: 'Пойти на кружок', result: 'Новый знакомый показал, как смешивать краски. Ты возвращаешься домой с хорошим настроением.', effects: { curiosity: 7, happiness: 5, energy: -5 } },
-      { label: 'Позвать друга гулять', result: 'Вы придумали игру во дворе и договорились встретиться снова.', effects: { happiness: 7, curiosity: 3, energy: -7 } },
-      { label: 'Помочь семье дома', result: 'Покупки разобраны, а потом вся семья собирается за чаем на кухне.', effects: { happiness: 4, health: 2, energy: 1 } },
-      { label: 'Попросить новую книгу', result: 'Вечером близкий человек читает тебе историю, и ты запоминаешь новое слово.', effects: { curiosity: 8, happiness: 2, energy: -2 } },
+function milestone(life: Life) {
+  const content: Record<number, [string, string]> = {
+    1: [
+      'Первые шаги',
+      `${characterSubject(life.character)} делает первые неуверенные шаги рядом с близким взрослым.`,
+    ],
+    3: ['Первое большое «почему?»', 'Близкий взрослый отвечает на первые большие вопросы ребёнка.'],
+    6: [
+      'Новая глава',
+      `${characterSubject(life.character)} знакомится с новым распорядком занятий при поддержке семьи.`,
+    ],
+    13: [
+      'Свои решения',
+      `${characterSubject(life.character)} обсуждает с близкими больше самостоятельности.`,
+    ],
+    18: [
+      'Взрослая жизнь',
+      `${characterSubject(life.character)} получает больше самостоятельности в повседневных делах.`,
     ],
   };
-  life.events.unshift(event);
+  const entry = content[life.age];
+  if (entry && !life.events.some((event) => event.templateId === `milestone-${life.age}`))
+    record(life, {
+      kind: 'milestone',
+      templateId: `milestone-${life.age}`,
+      title: entry[0],
+      description: `${birthdayDescription(life.character, life.age)} ${entry[1]}`,
+      actor: protagonist(life),
+      target: { kind: 'object', name: 'Новый этап жизни' },
+      context: 'День рождения и возрастная веха.',
+    });
+}
+function actionEvent(life: Life, id: ActionId): EventDraft {
+  const action = actions[id],
+    name = characterSubject(life.character);
+  let description = `${name} ${action.narrative}`;
+  if (life.age < 6 && id === 'read')
+    description = `${name} рассматривает картинки в книге, пока близкий взрослый читает вслух.`;
+  if (life.age < 13 && (id === 'walk' || id === 'explore'))
+    description += ' Рядом идёт близкий взрослый, который следит за безопасностью.';
+  if (life.age < 6 && id === 'play') description += ' Близкий взрослый остаётся рядом и помогает.';
+  return {
+    kind: 'action',
+    templateId: `action-${id}`,
+    title: action.target,
+    description,
+    actor: protagonist(life),
+    target: { kind: 'object', name: action.target },
+    context:
+      life.age < 13
+        ? 'Посильное занятие, при необходимости с поддержкой взрослого.'
+        : 'Самостоятельное занятие по силам.',
+    effects: action.effects,
+  };
+}
+function progress(
+  life: Life,
+  months: number,
+  random: (() => number) | undefined,
+  actionId?: ActionId,
+): Life {
+  if (!Number.isInteger(months) || months < 1 || months > 1200 || pendingDecision(life))
+    return life;
+  if (actionId && !availableActions(life.age, life.stats).some((action) => action.id === actionId))
+    return life;
+  ensureSimulation(life);
+  if (!random) {
+    life.rng ??= randomState(Math.floor(Math.random() * 4294967296));
+    random = () => nextRandom(life.rng!);
+  }
+  for (let month = 0; month < months; month++) {
+    if (pendingDecision(life)) break;
+    if (
+      actionId &&
+      !availableActions(life.age, life.stats).some((action) => action.id === actionId)
+    )
+      break;
+    const oldAge = life.age;
+    life.currentDate = nextLifeMonth(life.currentDate, life.birthDate);
+    life.age = dateAge(life.currentDate, life.birthDate);
+    const repaired = repairMissingNames(life, random);
+    if (repaired)
+      record(life, {
+        kind: 'milestone',
+        templateId: 'identity-repair',
+        title: 'Заполнены отсутствующие имена',
+        description: `В старом сохранении уточнены отсутствующие имена: ${repaired}. Использованы отмеченные источники или резервный набор; прежние записи и существующие имена не переписаны. Местное происхождение резервных имён не подтверждено.`,
+        actor: { kind: 'world', name: 'Данные сохранённой истории' },
+        target: protagonist(life),
+        context: 'Однократное заполнение явных заглушек, без создания прошлых встреч.',
+      });
+    if (life.age > oldAge) {
+      milestone(life);
+      if (!life.events.some((e) => e.templateId === `milestone-${life.age}` || e.templateId === `birthday-${life.age}`))
+        record(life, {
+          kind: 'milestone',
+          templateId: `birthday-${life.age}`,
+          title: 'День рождения',
+          description: birthdayDescription(life.character, life.age),
+          actor: protagonist(life),
+          target: { kind: 'object', name: 'Новый год жизни' },
+          context: 'Наступила годовщина рождения.',
+        });
+    }
+    // Ordinary recovery is state evolution, not a reason to spam a diary entry.
+    effects(life, { energy: 2 });
+    if (actionId && availableActions(life.age).some((action) => action.id === actionId)) {
+      const action = record(life, actionEvent(life, actionId));
+      if (actionId === 'create') startProject(life, action.id);
+      if (life.age >= 13 && actionId === 'walk')
+        applyEffects(
+          life,
+          [{ flags: { 'movement-practice': true } }],
+          action.id,
+          action.description,
+        );
+      if (life.age >= 18 && actionId === 'explore')
+        applyEffects(life, [{ flags: { 'new-circles': true } }], action.id, action.description);
+      const skill =
+        actionId === 'read' || actionId === 'learn'
+          ? 'learning'
+          : actionId === 'create'
+            ? 'craft'
+            : actionId === 'help'
+              ? 'social'
+              : null;
+      if (skill) {
+        const consequences = [{ skills: { [skill]: 0.1 } }];
+        applyEffects(life, consequences, action.id, action.description);
+        action.appliedConsequences?.push(...consequences);
+      }
+    }
+    for (const draft of runCoreMonth(life, random)) record(life, draft);
+    const ambient = automaticEvent(life, random);
+    if (ambient) record(life, ambient);
+    const decision = coreDecision(life);
+    if (decision) record(life, decision);
+    life.updatedAt = life.rng ? `${life.currentDate}T12:00:00.000Z` : new Date().toISOString();
+  }
   return life;
 }
-export function advance(life: Life, actionId: ActionId, months = 1): Life {
-  const action = actions[actionId];
-  if (!action || !availableActions(life.age).some((item) => item.id === actionId)) return life;
-  const nextDate = new Date(`${life.currentDate}T12:00:00`);
-  nextDate.setMonth(nextDate.getMonth() + months);
-  life.currentDate = nextDate.toISOString().slice(0, 10);
-  const previousAge = life.age;
-  life.age = dateAge(life.currentDate, life.birthDate);
-  const description = actionId === 'cuddle' ? embraceDescription(life.character) : action.description;
-  addEvent(life, action.title, description, action.effects);
-  if (life.age > previousAge) maybeMilestone(life);
-  maybeChoice(life);
-  life.updatedAt = new Date().toISOString();
-  return life;
+export function advanceTime(life: Life, months = 1, random?: () => number): Life {
+  return progress(life, months, random);
+}
+// Player actions remain a separate API and cannot be used for infant caregiving.
+export function advance(life: Life, actionId: ActionId, months = 1, random?: () => number): Life {
+  if (!Object.hasOwn(actions, actionId)) return life;
+  return progress(life, months, random, actionId);
 }
 export function resolveChoice(life: Life, eventId: string, choiceIndex: number): Life {
   const event = life.events.find((item) => item.id === eventId);
-  const choice = event?.choices?.[choiceIndex];
-  if (!event || !choice || event.outcome) return life;
+  if (
+    !event ||
+    pendingDecision(life)?.id !== eventId ||
+    !canDecide(life, event) ||
+    !Number.isInteger(choiceIndex)
+  )
+    return life;
+  const choice = event.choices?.[choiceIndex];
+  if (!choice) return life;
+  if (!commitPlan(life, event, choiceIndex)) return life;
   event.outcome = choice.result;
-  for (const key of Object.keys(choice.effects) as (keyof Stats)[]) life.stats[key] = clamp(life.stats[key] + (choice.effects[key] ?? 0));
-  life.updatedAt = new Date().toISOString();
+  event.resolution = { actor: protagonist(life), choiceIndex };
+  effects(life, choice.effects);
+  life.updatedAt = life.rng ? `${life.currentDate}T12:00:00.000Z` : new Date().toISOString();
   return life;
+}
+
+// Bound runaway searches in worlds where no future decision is currently possible.
+export function advanceToNextDecision(life: Life, limit = 1200): number {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 1200) return 0;
+  let months = 0;
+  while (months < limit && !pendingDecision(life)) {
+    const before = life.currentDate;
+    advanceTime(life, 1);
+    if (life.currentDate === before) break;
+    months++;
+  }
+  return months;
 }

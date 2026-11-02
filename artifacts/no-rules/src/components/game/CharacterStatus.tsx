@@ -1,3 +1,4 @@
+import { formatMoney } from '../../game/finance';
 import { Battery, Brain, Coins, Heart, Sun } from 'lucide-react';
 import type { Life } from '../../game/domain';
 
@@ -33,9 +34,9 @@ export default function CharacterStatus({ life }: { life: Life }) {
         <div className="nr-status-title">
           <Coins size={14} strokeWidth={1.8} />
           <span>деньги</span>
-          <strong>{familyFundsLabel(life.conditions.className)}</strong>
+          <strong>{life.simulation ? formatMoney(life,life.simulation.person.money.cash) : familyFundsLabel(life.conditions.className)}</strong>
         </div>
-        <div className="nr-money-sub">по условиям семьи</div>
+        <div className="nr-money-sub">{life.simulation ? `долг ${formatMoney(life,life.simulation.person.money.debt)} · ${life.age < 18 ? 'быт обеспечивает семья' : life.simulation.person.job.title}` : 'по условиям семьи'}</div>
       </div>
     </section>
   );

@@ -1,8 +1,11 @@
+import { childhoodYearSeconds } from '../../game/pacing';
 import { CalendarDays, FastForward, ListChecks, Pause, Play } from 'lucide-react';
 
 export type TimeSpeed = 1 | 2 | 4;
 
 type TimeControlsProps = {
+  age: number;
+  onNextDecision: () => void;
   currentDate: string;
   playing: boolean;
   speed: TimeSpeed;
@@ -10,11 +13,14 @@ type TimeControlsProps = {
   onToggle: () => void;
   onSpeedChange: () => void;
   onOpenActions: () => void;
+  actionsAvailable: boolean;
   onAdvanceMonth: () => void;
   onAdvanceYear: () => void;
 };
 
 export default function TimeControls({
+  age,
+  onNextDecision,
   currentDate,
   playing,
   speed,
@@ -22,6 +28,7 @@ export default function TimeControls({
   onToggle,
   onSpeedChange,
   onOpenActions,
+  actionsAvailable,
   onAdvanceMonth,
   onAdvanceYear,
 }: TimeControlsProps) {
@@ -50,40 +57,71 @@ export default function TimeControls({
           onClick={onToggle}
           disabled={locked}
         >
-          {playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}
+          {playing ? (
+            <Pause size={15} fill="currentColor" />
+          ) : (
+            <Play size={15} fill="currentColor" />
+          )}
           <span>{playing ? 'Пауза' : 'Продолжить'}</span>
         </button>
         <button
           className="nr-control nr-speed-control"
           type="button"
-          aria-label={`Скорость симуляции: ${speed}×. Нажмите, чтобы изменить`}
+          aria-label={
+            age < 18
+              ? `Год жизни за ${childhoodYearSeconds(age)} секунд`
+              : `Скорость симуляции: ${speed}×. Нажмите, чтобы изменить`
+          }
           data-testid="button-speed"
           onClick={onSpeedChange}
-          disabled={locked}
+          disabled={locked || age < 18}
         >
-          <FastForward size={15} fill="currentColor" />
-          <span>{speed}×</span>
+          {age >= 18 && <FastForward size={15} fill="currentColor" />}
+          <span>{age < 18 ? `${childhoodYearSeconds(age)}с/год` : `${speed}×`}</span>
         </button>
         <button
           className="nr-control nr-action-menu-control"
           type="button"
           onClick={onOpenActions}
           disabled={locked}
-          aria-label="Выбрать действие"
+          aria-label={actionsAvailable ? 'Выбрать действие' : 'Как проходит младенчество'}
           data-testid="button-open-actions"
         >
           <ListChecks size={15} />
-          <span>Действия</span>
+          <span>{actionsAvailable ? 'Действия' : 'Забота'}</span>
         </button>
         <div className="nr-manual-time">
-          <button className="nr-control" type="button" onClick={onAdvanceMonth} disabled={locked} aria-label="Прожить следующий месяц" data-testid="button-next-month">
+          <button
+            className="nr-control"
+            type="button"
+            onClick={onAdvanceMonth}
+            disabled={locked}
+            aria-label="Прожить следующий месяц"
+            data-testid="button-next-month"
+          >
             + мес.
           </button>
-          <button className="nr-control" type="button" onClick={onAdvanceYear} disabled={locked} aria-label="Прожить следующий год" data-testid="button-next-year">
+          <button
+            className="nr-control"
+            type="button"
+            onClick={onAdvanceYear}
+            disabled={locked}
+            aria-label="Прожить следующий год"
+            data-testid="button-next-year"
+          >
             + год
           </button>
         </div>
       </div>
+      <button
+        className="nr-control nr-next-decision"
+        type="button"
+        onClick={onNextDecision}
+        disabled={locked}
+        data-testid="button-next-decision"
+      >
+        До следующего выбора
+      </button>
     </section>
   );
 }
