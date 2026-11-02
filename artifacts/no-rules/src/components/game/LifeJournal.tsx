@@ -1,3 +1,4 @@
+import { russianCount } from '../../game/event-text';
 import { BookOpen } from 'lucide-react';
 import { journalPresentation } from '../../game/event-rules';
 import type { LifeEvent } from '../../game/domain';
@@ -24,7 +25,7 @@ export default function LifeJournal({ events }: { events: LifeEvent[] }) {
             <BookOpen size={19} /> Дневник жизни
           </h2>
         </div>
-        <span className="nr-entry-count">{events.length} {events.length === 1 ? 'ЗАПИСЬ' : 'ЗАПИСЕЙ'}</span>
+        <span className="nr-entry-count">{events.length} {russianCount(events.length, 'ЗАПИСЬ', 'ЗАПИСИ', 'ЗАПИСЕЙ')}</span>
       </div>
 
       <div className="nr-timeline" data-testid="display-events" tabIndex={0} role="region" aria-label="События: сначала новые" aria-live="polite">

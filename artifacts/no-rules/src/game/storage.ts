@@ -1,3 +1,4 @@
+import { validDate, civilAge } from './calendar';
 import { validSimulation, validPlan } from './causal-validation';
 import type { Life, LifeEvent } from './domain';
 const KEY = 'no-rules-life-v1';
@@ -14,9 +15,11 @@ export function isValidLife(value: unknown): value is Life {
   const stats = value.stats as Record<string, unknown>;
   return (
     typeof value.id === 'string' &&
-    typeof value.currentDate === 'string' &&
-    typeof value.birthDate === 'string' &&
-    typeof value.age === 'number' &&
+    validDate(value.currentDate) &&
+    validDate(value.birthDate) &&
+    value.currentDate >= value.birthDate &&
+    Number.isInteger(value.age) &&
+    Number(value.age) >= 0 &&
     typeof value.character.name === 'string' &&
     ['health', 'happiness', 'curiosity', 'energy'].every(
       (key) => typeof stats[key] === 'number' && Number.isFinite(stats[key]),
@@ -94,7 +97,9 @@ export function loadLife(): Life | null {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const value: unknown = JSON.parse(raw);
-    return isValidLife(value) ? migrateDecisionChoices(value) : null;
+    if (!isValidLife(value)) return null;
+    value.age = civilAge(value.currentDate, value.birthDate);
+    return migrateDecisionChoices(value);
   } catch {
     return null;
   }

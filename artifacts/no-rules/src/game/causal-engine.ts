@@ -1,3 +1,4 @@
+import { lifePathRules } from './life-paths';
 import type { Life, LifeEvent, EventParticipant } from './domain';
 import { type EventDraft, protagonist } from './life-events';
 import { characterSubject, isolateName } from './event-text';
@@ -372,7 +373,7 @@ export function coreDecision(life: Life): CoreDraft | null {
     hero = protagonist(life);
   const friend = Object.values(state.npcs).find((npc) => npc.role === 'friend');
   const relation = friend ? state.relationships[friend.id] : null;
-  const rules: Rule[] = [];
+  const rules: Rule[] = lifePathRules(life);
   const add = (rule: Rule) => rules.push(rule);
   add({
     id: 'training-path',

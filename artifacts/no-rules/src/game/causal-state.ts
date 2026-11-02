@@ -162,7 +162,14 @@ export function addNpc(
   const state = ensureSimulation(life);
   const country = worldCountries.find((c) => c.code === state.world.countryCode);
   const name = country
-    ? generateFamilyNames(country, random() < 0.5 ? 'Девочка' : 'Мальчик', random).character.name
+    ? generateFamilyNames(
+        country,
+        random() < 0.5 ? 'Девочка' : 'Мальчик',
+        random,
+        country.settlements.find(
+          (place) => place.geonameId === life.location.birthplace?.settlementId,
+        ),
+      ).character.name
     : 'Имя не указано';
   const id = `npc-${life.id}-${++state.sequence}`,
     age = life.age + (role === 'neighbor' ? 20 : role === 'colleague' ? 3 : 0);

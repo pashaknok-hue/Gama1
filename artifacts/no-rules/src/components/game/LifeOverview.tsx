@@ -1,3 +1,4 @@
+import { yearWord } from '../../game/event-text';
 import type { Life } from '../../game/domain';
 import { monthIndex } from '../../game/causal-state';
 
@@ -49,7 +50,7 @@ export default function LifeOverview({ life }: { life: Life }) {
           <bdi>{npc.name}</bdi>
           <span>
             {' '}
-            · {npc.age} лет · близость {Math.round(state.relationships[npc.id].bond)}, доверие{' '}
+            · {npc.age} {yearWord(npc.age)} · близость {Math.round(state.relationships[npc.id].bond)}, доверие{' '}
             {Math.round(state.relationships[npc.id].trust)}
           </span>
           <p className="nr-life-muted">

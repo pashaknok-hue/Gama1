@@ -1,3 +1,4 @@
+import { yearWord } from '../../game/event-text';
 import { Pause } from 'lucide-react';
 import { canChoose } from '../../game/event-rules';
 import type { Life, LifeEvent, Stats } from '../../game/domain';
@@ -68,7 +69,7 @@ export default function DecisionModal({
         </div>
         <div className="nr-event-body">
           <div className="nr-event-kicker">
-            ВАЖНЫЙ МОМЕНТ <span>· {event.age === 0 ? 'РОЖДЕНИЕ' : `${event.age} ЛЕТ`}</span>
+            ВАЖНЫЙ МОМЕНТ <span>· {event.age === 0 ? 'РОЖДЕНИЕ' : `${event.age} ${yearWord(event.age).toUpperCase()}`}</span>
           </div>
           <h2 id="nr-event-title">{event.title}</h2>
           <p id="nr-event-copy">{event.description}</p>
