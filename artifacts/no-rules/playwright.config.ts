@@ -12,10 +12,12 @@ export default defineConfig({
   projects: [
     { name: 'iPhone-Chromium', use: { ...devices['iPhone 13'], defaultBrowserType: 'chromium' } },
   ],
-  webServer: {
-    command: 'pnpm run dev',
-    url: 'http://127.0.0.1:5173',
-    reuseExistingServer: !process.env.CI,
-    env: { PORT: '5173', BASE_PATH: '/' },
-  },
+  webServer: process.env.NO_RULES_TEST_URL
+    ? undefined
+    : {
+        command: 'pnpm run dev',
+        url: 'http://127.0.0.1:5173',
+        reuseExistingServer: !process.env.CI,
+        env: { PORT: '5173', BASE_PATH: '/' },
+      },
 });
