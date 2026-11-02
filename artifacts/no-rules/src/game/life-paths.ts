@@ -1,9 +1,10 @@
+import { advancedPaths } from './advanced-paths';
 import type { Life } from './domain';
 import { ensureSimulation, npcParticipant } from './causal-state';
 import { protagonist } from './life-events';
 import type { CoreDraft, Condition } from './causal-engine';
 
-type PathRule = {
+export type PathRule = {
   id: string;
   priority: number;
   minAge: number;
@@ -188,6 +189,7 @@ export function lifePathRules(life: Life): PathRule[] {
                 {
                   flags: { 'illegal-offer-answered': true, 'illegal-involvement': true },
                   cash: 60,
+                  reputation: -8,
                   stats: { happiness: -5 },
                   relationship: { npcId: acquaintance.id, bond: 5, trust: -5 },
                 },
@@ -274,5 +276,5 @@ export function lifePathRules(life: Life): PathRule[] {
       ],
     }),
   });
-  return rules;
+  return [...rules, ...advancedPaths(life)];
 }

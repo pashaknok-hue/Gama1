@@ -1,40 +1,11 @@
 import { yearWord } from '../../game/event-text';
 import { Pause } from 'lucide-react';
 import { canChoose } from '../../game/event-rules';
-import type { Life, LifeEvent, Stats } from '../../game/domain';
-
-const statLabels: Record<keyof Stats, string> = {
-  health: 'здоровье',
-  happiness: 'настроение',
-  curiosity: 'интерес',
-  energy: 'энергия',
-};
-
-function effectSummary(effects: Partial<Stats>) {
-  const parts = (Object.entries(effects) as [keyof Stats, number | undefined][])
-    .filter((entry): entry is [keyof Stats, number] => typeof entry[1] === 'number')
-    .map(([stat, value]) => `${statLabels[stat]} ${value > 0 ? '+' : ''}${value}`);
-  return parts.join(' · ') || 'свой путь';
-}
+import type { Life, LifeEvent } from '../../game/domain';
 
 function planSummary(choice: NonNullable<LifeEvent['choices']>[number]) {
-  if (!choice.plan) return effectSummary(choice.effects);
-  const labels = { cash: 'деньги', savings: 'накопления', debt: 'долг' };
-  const parts = choice.plan.effects
-    .flatMap((effect) => [
-      ...(['cash', 'savings', 'debt'] as const)
-        .filter((key) => effect[key])
-        .map((key) => `${labels[key]} ${effect[key]! > 0 ? '+' : ''}${effect[key]}`),
-      effect.stats ? effectSummary(effect.stats) : '',
-      effect.relationship
-        ? `близость ${effect.relationship.bond > 0 ? '+' : ''}${effect.relationship.bond}`
-        : '',
-      effect.skills ? 'развитие навыков' : '',
-      effect.job ? effect.job.title : '',
-    ])
-    .filter(Boolean);
-  if (choice.plan.delayed) parts.push(`план через ${choice.plan.delayed.afterMonths} мес.`);
-  return parts.join(' · ') || 'дальнейшие события зависят от решения';
+  const cost = choice.plan?.effects.reduce((sum, e) => sum + Math.min(0, e.cash ?? 0), 0) ?? 0;
+  return cost < 0 ? `Потребуется ${-cost} усл. ед. сейчас` : 'Результат станет понятен со временем';
 }
 
 export default function DecisionModal({

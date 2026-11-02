@@ -193,3 +193,29 @@ pnpm --filter @workspace/scripts exec node --import tsx ../artifacts/no-rules/te
 
 `causal_smoke.py` проверяет эту цепочку реальными кнопками в Chromium, включая
 загрузку перед последствием, даты после февраля и бесплатный выход.
+
+## Проверки из зависимостей проекта
+
+```sh
+pnpm --filter @workspace/no-rules test
+pnpm --filter @workspace/no-rules test:population
+pnpm --filter @workspace/no-rules exec playwright install chromium
+pnpm --filter @workspace/no-rules test:e2e
+```
+
+Playwright автоматически запускает Vite (или использует уже работающий сервер).
+Для системного Chromium задайте `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium`.
+Набор использует мобильную геометрию Chromium; это не физический Safari.
+На сбое сохраняются trace и screenshot в `test-results`. Длительный `test:population`
+проверяет 1000 разных seed, все 193 страны ООН и жизнь до 85 лет: 1 020 000 месяцев.
+Сырые результаты записываются в `test-results/population-report.json`.
+
+`seededLife(seed, options)` воспроизводит рождение, даты, NPC, ID событий и историю
+при одинаковых действиях и решениях. Поле `rng` содержит версию алгоритма и текущее
+состояние и сохраняется вместе с жизнью. У старого сохранения поле необязательно;
+при первом автоматическом переходе добавляется новое состояние RNG, без смены
+имён, географии или истории. Seed сам по себе не фиксирует решения игрока.
+
+Тест считает отдельно явные заглушки «Имя не указано»: непустая строка не означает
+наличия культурно подтверждённого имени. Пробелы в данных не заполняются выдуманными
+именами. Полный охват и источники перечислены в `data/COVERAGE.md`.

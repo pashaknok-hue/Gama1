@@ -1,8 +1,10 @@
+import { eventCategory } from './event-category';
 import { lifePathRules } from './life-paths';
 import type { Life, LifeEvent, EventParticipant } from './domain';
 import { type EventDraft, protagonist } from './life-events';
 import { characterSubject, isolateName } from './event-text';
 import {
+  hasRole,
   ensureSimulation,
   monthIndex,
   clamp,
@@ -17,7 +19,7 @@ import {
 
 export type CoreDraft = EventDraft & { id?: string } & Pick<
     LifeEvent,
-    'choices' | 'eligibility' | 'cause' | 'appliedConsequences' | 'consequenceStatus'
+    'category' | 'choices' | 'eligibility' | 'cause' | 'appliedConsequences' | 'consequenceStatus'
   >;
 export type Condition =
   | { type: 'age'; min: number; max?: number }
@@ -143,17 +145,27 @@ export function runCoreMonth(life: Life, random: () => number): CoreDraft[] {
   }
   if (
     person.job.status === 'employed' &&
-    !Object.values(state.npcs).some((npc) => npc.role === 'colleague')
+    !Object.values(state.npcs).some((npc) => hasRole(npc, 'colleague'))
   ) {
-    const colleague = addNpc(life, 'colleague', random);
+    const childhoodFriend = Object.values(state.npcs).find(
+      (npc) =>
+        npc.role === 'friend' && state.relationships[npc.id].trust >= 40 && npc.memory.length > 0,
+    );
+    const colleague = childhoodFriend ?? addNpc(life, 'colleague', random);
+    if (childhoodFriend)
+      colleague.roles = [...new Set([...(colleague.roles ?? []), 'colleague' as const])];
     events.push(
       event(
         life,
         'new-colleague',
-        'Знакомство на работе',
+        childhoodFriend ? 'Знакомое лицо на работе' : 'Знакомство на работе',
         `${isolateName(npcParticipant(colleague).name)} помогает освоиться в рабочих задачах.`,
         npcParticipant(colleague),
-        ['Началась новая работа.'],
+        [
+          'Началась новая работа.',
+          ...(childhoodFriend ? ['Сохранились доверие и общие воспоминания.'] : []),
+        ],
+        childhoodFriend?.memory.slice(-1).map((memory) => memory.eventId) ?? [],
       ),
     );
   }
@@ -205,7 +217,7 @@ export function runCoreMonth(life: Life, random: () => number): CoreDraft[] {
   }
   if (person.job.status === 'employed') {
     person.skills.craft = clamp(person.skills.craft + 0.02);
-    const colleague = Object.values(state.npcs).find((npc) => npc.role === 'colleague');
+    const colleague = Object.values(state.npcs).find((npc) => hasRole(npc, 'colleague'));
     if (
       colleague &&
       now - (state.fired['career-review'] ?? now) >= 24 &&
@@ -260,6 +272,9 @@ export function runCoreMonth(life: Life, random: () => number): CoreDraft[] {
       ],
       [queued.sourceEventId],
     );
+    draft.category =
+      life.events.find((source) => source.id === queued.sourceEventId)?.category ??
+      eventCategory('');
     queued.status = valid ? 'applied' : 'cancelled';
     draft.consequenceStatus = queued.status;
     if (valid) automatic(life, draft, queued.effects);

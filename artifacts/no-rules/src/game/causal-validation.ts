@@ -14,7 +14,7 @@ const job = (v: unknown) =>
   Number(v.income) >= 0;
 function effect(v: unknown): boolean {
   if (!object(v)) return false;
-  for (const key of ['cash', 'savings', 'debt', 'expenseMultiplier'])
+  for (const key of ['cash', 'savings', 'debt', 'expenseMultiplier', 'reputation'])
     if (v[key] !== undefined && !finite(v[key])) return false;
   if (v.expenseMultiplier !== undefined && Number(v.expenseMultiplier) <= 0) return false;
   for (const key of ['stats', 'skills'])
@@ -30,6 +30,8 @@ function effect(v: unknown): boolean {
         ))
     )
       return false;
+  if (v.habits !== undefined && (!object(v.habits) || !Object.values(v.habits).every(finite)))
+    return false;
   if (v.flags !== undefined && !flags(v.flags)) return false;
   if (v.job !== undefined && !job(v.job)) return false;
   if (v.education !== undefined && !['none', 'school', 'vocational'].includes(String(v.education)))
@@ -101,6 +103,12 @@ export function validSimulation(v: unknown): v is SimulationState {
     !Number.isInteger(v.lastMonth)
   )
     return false;
+  if (v.person.reputation !== undefined && !finite(v.person.reputation)) return false;
+  if (
+    v.person.habits !== undefined &&
+    (!object(v.person.habits) || !Object.values(v.person.habits).every(finite))
+  )
+    return false;
   const world = v.world,
     p = v.person;
   if (
@@ -130,6 +138,17 @@ export function validSimulation(v: unknown): v is SimulationState {
   )
     return false;
   for (const [id, npc] of Object.entries(v.npcs)) {
+    if (
+      object(npc) &&
+      npc.roles !== undefined &&
+      (!Array.isArray(npc.roles) ||
+        !npc.roles.every((role) =>
+          ['parent', 'sibling', 'friend', 'neighbor', 'colleague', 'partner', 'child'].includes(
+            String(role),
+          ),
+        ))
+    )
+      return false;
     if (
       !object(npc) ||
       npc.id !== id ||

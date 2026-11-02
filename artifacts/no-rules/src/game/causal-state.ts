@@ -10,6 +10,7 @@ export type Npc = {
   id: string;
   name: string;
   role: NpcRole;
+  roles?: NpcRole[];
   bornMonth: number;
   age: number;
   traits: string[];
@@ -19,6 +20,8 @@ export type Npc = {
 export type Relationship = { npcId: string; bond: number; trust: number; lastContactMonth: number };
 export type Job = { status: 'unemployed' | 'employed' | 'retired'; title: string; income: number };
 export type Effect = {
+  reputation?: number;
+  habits?: Record<string, number>;
   stats?: Partial<Stats>;
   cash?: number;
   savings?: number;
@@ -64,6 +67,8 @@ export type SimulationState = {
     calibration: 'game-model';
   };
   person: {
+    reputation?: number;
+    habits?: Record<string, number>;
     education: 'none' | 'school' | 'vocational';
     skills: { learning: number; craft: number; social: number };
     job: Job;
@@ -248,6 +253,12 @@ export function applyEffects(
       state.npcs[effect.npc.id].stats.happiness = clamp(
         state.npcs[effect.npc.id].stats.happiness + effect.npc.happiness,
       );
+    if (effect.reputation !== undefined)
+      person.reputation = clamp((person.reputation ?? 0) + effect.reputation, -100, 100);
+    for (const [habit, value] of Object.entries(effect.habits ?? {})) {
+      person.habits ??= {};
+      person.habits[habit] = clamp((person.habits[habit] ?? 0) + value);
+    }
     if (effect.education) person.education = effect.education;
     if (effect.job) {
       if (effect.job.status === 'employed' && person.job.status !== 'employed')
@@ -281,3 +292,6 @@ export function canApplyPlan(life: Life, plan?: CausalPlan): boolean {
     )
   );
 }
+
+export const hasRole = (npc: Npc, role: NpcRole) =>
+  npc.role === role || !!npc.roles?.includes(role);
