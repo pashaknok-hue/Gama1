@@ -78,6 +78,25 @@ with sync_playwright() as p:
  assert page.get_by_text('ТВОЯ ИСТОРИЯ · СТАРШИЙ ВОЗРАСТ',exact=True).is_visible()
  page.screenshot(path=str(OUT/'old-age.png'))
  print('PASS browser: birth to age 85, affordable decisions, retirement, complete localStorage round trip and old-age UI',flush=True)
+ # Exercise the optional illegal path through actual controls and a durable save.
+ risk=page.evaluate("""async()=>{
+ const {generateBirthProfile}=await import('/src/game/generation.ts');const {makeLife}=await import('/src/game/simulation.ts');
+ const {ensureSimulation,addNpc}=await import('/src/game/causal-state.ts');
+ const life=makeLife(generateBirthProfile({countryCode:'FR'}));life.birthDate='2000-01-31';life.currentDate='2018-01-31';life.age=18;life.events=[];delete life.simulation;
+ const state=ensureSimulation(life);state.person.money.cash=1000;Object.assign(state.person.flags,{'training-planned':true,'friend-request-answered':true,'new-circles':true});
+ addNpc(life,'friend',()=>.4);return JSON.parse(JSON.stringify(life));
+ }""")
+ load(risk);page.clock.run_for(10_000);current=saved();pending=next(e for e in current['events'] if e.get('choices') and not e.get('outcome'))
+ assert pending['templateId']=='illegal-offer' and current['currentDate']=='2018-02-28'
+ page.get_by_test_id(f'choice-{pending["id"]}-2').click();current=saved();load(current)
+ for _ in range(6):page.get_by_test_id('button-next-month').click()
+ current=saved();assert current['currentDate']=='2018-08-31' and current['age']==18
+ assert current['simulation']['queue'][0]['status']=='applied' and current['simulation']['person']['money']['debt']>=90
+ pending=next(e for e in current['events'] if e.get('choices') and not e.get('outcome'))
+ assert pending['templateId']=='legal-response';page.get_by_test_id(f'choice-{pending["id"]}-1').click()
+ current=saved();assert current['simulation']['person']['flags']['illegal-involvement']==False
+ assert current['character']==risk['character'];page.screenshot(path=str(OUT/'consequences.png'))
+ print('PASS browser: optional adult illegal path, save/reload, six-month consequence, free exit and month-end dates',flush=True)
  assert not errors,errors
  print('PASS browser: unaffordable choice disabled, free alternative available; no JavaScript errors. Screenshots:',OUT,flush=True)
  b.close()

@@ -1,3 +1,4 @@
+import { yearWord } from './game/event-text';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
@@ -350,7 +351,7 @@ export default function App() {
           <div className="nr-age-stamp" data-testid="display-age">
             <span>ВОЗРАСТ</span>
             <strong>{life.age}</strong>
-            <small>{life.age === 1 ? 'год' : life.age > 1 && life.age < 5 ? 'года' : 'лет'}</small>
+            <small>{yearWord(life.age)}</small>
           </div>
         </section>
 

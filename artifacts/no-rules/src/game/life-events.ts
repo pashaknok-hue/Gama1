@@ -1,4 +1,5 @@
 import type { EventParticipant, Life, LifeEvent, Stats } from './domain';
+import { monthIndex } from './causal-state';
 import { characterSubject } from './event-text';
 import { nameInCase } from './names';
 
@@ -36,7 +37,11 @@ export function caregiver(life: Life, preferFather = false) {
 }
 const childObject = (life: Life) =>
   nameInCase(life.character, 'accusative') ??
-  (life.character.gender === 'Девочка' ? 'дочь' : 'сына');
+  (life.family.some((p) => p.relationship === 'Мама' || p.relationship === 'Папа')
+    ? life.character.gender === 'Девочка'
+      ? 'дочь'
+      : 'сына'
+    : 'ребёнка');
 
 type Template = {
   id: string;
@@ -74,6 +79,26 @@ const self =
   });
 const templates: Template[] = [
   {
+    id: 'elder-memories',
+    minAge: 65,
+    build: self(
+      'Сохранить воспоминания',
+      'Записи о жизни',
+      'Спокойный день старшего возраста.',
+      (n) => `${n} возвращается к памятным событиям и записывает важные детали для близких.`,
+    ),
+  },
+  {
+    id: 'elder-rhythm',
+    minAge: 65,
+    build: self(
+      'Посильный ритм',
+      'Отдых и повседневные дела',
+      'Распорядок учитывает возраст и самочувствие.',
+      (n) => `${n} распределяет дела так, чтобы оставалось время на отдых и общение.`,
+    ),
+  },
+  {
     id: 'care-embrace',
     minAge: 0,
     maxAge: 2,
@@ -101,7 +126,7 @@ const templates: Template[] = [
     minAge: 0,
     maxAge: 2,
     build: care(
-      'Первая прогулка за день',
+      'Прогулка возле дома',
       (_l, a) =>
         `${a.label} ${a.female ? 'вышла' : 'вышел'} с ребёнком на короткую прогулку возле дома. Листья шелестели над коляской.`,
       'Прогулка со взрослым; младенец не выбирает маршрут.',
@@ -342,19 +367,23 @@ const templates: Template[] = [
   },
 ];
 
-export function automaticEvent(life: Life, random: () => number): EventDraft {
-  const recent = new Set(
-    life.events
-      .filter((event) => event.kind === 'life')
-      .slice(0, 3)
-      .map((event) => event.templateId),
-  );
+export function automaticEvent(life: Life, random: () => number): EventDraft | null {
+  const now = monthIndex(life.currentDate);
+  const lastSeen = new Map<string, number>();
+  for (const entry of life.events) {
+    if (entry.templateId && !lastSeen.has(entry.templateId))
+      lastSeen.set(entry.templateId, monthIndex(entry.date));
+  }
+  // Persistent per-template cooldown, independent of how many NPC events intervened.
   const eligible = templates.filter(
-    (template) => life.age >= template.minAge && life.age <= (template.maxAge ?? Infinity),
+    (t) =>
+      life.age >= t.minAge &&
+      life.age <= (t.maxAge ?? Infinity) &&
+      now - (lastSeen.get(t.id) ?? -Infinity) >= 6,
   );
-  const pool = eligible.filter((template) => !recent.has(template.id));
-  const template = (pool.length ? pool : eligible)[
-    Math.floor(random() * (pool.length || eligible.length))
-  ];
+  if (!eligible.length) return null; // A quiet month is better than a forced duplicate.
+  const oldest = Math.min(...eligible.map((t) => lastSeen.get(t.id) ?? -Infinity));
+  const pool = eligible.filter((t) => (lastSeen.get(t.id) ?? -Infinity) === oldest);
+  const template = pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))];
   return { ...template.build(life), templateId: template.id, kind: 'life' };
 }

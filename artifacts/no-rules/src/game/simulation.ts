@@ -1,4 +1,5 @@
 import { birthDescription, birthdayDescription, characterSubject } from './event-text';
+import { nextLifeMonth } from './calendar';
 import { dateAge } from './generation';
 import type { BirthProfile, Life, LifeEvent, Stats } from './domain';
 import { automaticEvent, protagonist, type EventDraft } from './life-events';
@@ -229,15 +230,6 @@ function actionEvent(life: Life, id: ActionId): EventDraft {
     effects: action.effects,
   };
 }
-function nextMonth(date: string) {
-  const [year, month, day] = date.split('-').map(Number);
-  const first = new Date(Date.UTC(year, month, 1));
-  const lastDay = new Date(
-    Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0),
-  ).getUTCDate();
-  first.setUTCDate(Math.min(day, lastDay));
-  return first.toISOString().slice(0, 10);
-}
 function progress(life: Life, months: number, random: () => number, actionId?: ActionId): Life {
   if (!Number.isInteger(months) || months < 1 || months > 1200 || pendingDecision(life))
     return life;
@@ -252,12 +244,26 @@ function progress(life: Life, months: number, random: () => number, actionId?: A
     )
       break;
     const oldAge = life.age;
-    life.currentDate = nextMonth(life.currentDate);
+    life.currentDate = nextLifeMonth(life.currentDate, life.birthDate);
     life.age = dateAge(life.currentDate, life.birthDate);
-    if (life.age > oldAge) milestone(life);
+    if (life.age > oldAge) {
+      milestone(life);
+      if (!life.events.some((e) => e.age === life.age && e.kind === 'milestone'))
+        record(life, {
+          kind: 'milestone',
+          templateId: `birthday-${life.age}`,
+          title: 'День рождения',
+          description: birthdayDescription(life.character, life.age),
+          actor: protagonist(life),
+          target: { kind: 'object', name: 'Новый год жизни' },
+          context: 'Наступила годовщина рождения.',
+        });
+    }
     effects(life, { energy: -1, happiness: -1 });
     if (actionId && availableActions(life.age).some((action) => action.id === actionId)) {
       const action = record(life, actionEvent(life, actionId));
+      if (life.age >= 18 && actionId === 'explore')
+        applyEffects(life, [{ flags: { 'new-circles': true } }], action.id, action.description);
       const skill =
         actionId === 'read' || actionId === 'learn'
           ? 'learning'
@@ -273,7 +279,8 @@ function progress(life: Life, months: number, random: () => number, actionId?: A
       }
     }
     for (const draft of runCoreMonth(life, random)) record(life, draft);
-    record(life, automaticEvent(life, random));
+    const ambient = automaticEvent(life, random);
+    if (ambient) record(life, ambient);
     const decision = coreDecision(life);
     if (decision) record(life, decision);
     life.updatedAt = new Date().toISOString();
