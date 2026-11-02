@@ -29,7 +29,7 @@ export default function LifeJournal({ events }: { events: LifeEvent[] }) {
 
       <div className="nr-timeline" data-testid="display-events" tabIndex={0} role="region" aria-label="События: сначала новые" aria-live="polite">
         {entries.length ? entries.map((event, index) => (
-          <article className="nr-entry" key={event.id} data-testid={`event-${event.id}`}>
+          <article className="nr-entry" key={event.id} id={`journal-${event.id}`} data-testid={`event-${event.id}`}>
             <div className="nr-entry-rail">
               <span className={`nr-timeline-dot ${index === 0 ? 'is-current' : ''}`} />
               {index !== entries.length - 1 && <span className="nr-timeline-line" />}
@@ -45,6 +45,10 @@ export default function LifeJournal({ events }: { events: LifeEvent[] }) {
               </div>
               <h3>{journalPresentation(event).title}</h3>
               <p>{journalPresentation(event).description}</p>
+              {event.cause && <details className="nr-event-cause"><summary>Почему это произошло?</summary>
+                <p>{event.cause.facts.join(' ')}</p>
+                {event.cause.sourceEventIds.map(id=>{const source=events.find(item=>item.id===id);return source ? <button key={id} type="button" onClick={()=>document.getElementById(`journal-${id}`)?.scrollIntoView({block:'nearest'})}>Ранее: {source.title}</button> : null;})}
+              </details>}
             </div>
           </article>
         )) : (

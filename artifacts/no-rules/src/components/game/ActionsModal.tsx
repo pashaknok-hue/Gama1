@@ -1,12 +1,16 @@
+import LifeOverview from './LifeOverview';
+import type { Life } from '../../game/domain';
 import { X } from 'lucide-react';
 import type { ActionId, ActionInfo } from '../../game/simulation';
 
 export default function ActionsModal({
   actions,
+  life,
   onSelect,
   onClose,
 }: {
   actions: ActionInfo[];
+  life: Life;
   onSelect: (actionId: ActionId) => void;
   onClose: () => void;
 }) {
@@ -28,6 +32,7 @@ export default function ActionsModal({
             <X size={18} />
           </button>
         </header>
+        <LifeOverview life={life} />
         <div className="nr-action-options" data-testid="modal-actions-list">
           {!actions.length && <p data-testid="infant-actions-note">Младенец ещё не выбирает занятия самостоятельно. О нём заботятся близкие, а события жизни появляются с течением времени.</p>}
           {actions.map((action) => (

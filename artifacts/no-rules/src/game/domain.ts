@@ -1,3 +1,4 @@
+import type { SimulationState, CausalPlan, Effect } from './causal-state';
 import type { PersonalName } from './names';
 import type { Birthplace } from './world';
 
@@ -23,10 +24,15 @@ export type LifeEvent = {
   context?: string;
   resolution?: { actor: EventParticipant; choiceIndex: number };
   eligibility?: { minAge: number; maxAge?: number };
-  choices?: { label: string; result: string; effects: Partial<Stats> }[]; outcome?: string;
+  cause?: { ruleId: string; facts: string[]; sourceEventIds: string[] };
+  appliedConsequences?: Effect[];
+  scheduledConsequenceIds?: string[];
+  consequenceStatus?: 'applied' | 'cancelled';
+  choices?: { plan?: CausalPlan; label: string; result: string; effects: Partial<Stats> }[]; outcome?: string;
 };
 export type Life = {
   id: string; character: Character; birthDate: string; location: { country: string; region: string; birthplace?: Birthplace };
   family: FamilyMember[]; conditions: { className: string; home: string; resources: string[] };
+  simulation?: SimulationState;
   currentDate: string; age: number; stats: Stats; events: LifeEvent[]; createdAt: string; updatedAt: string;
 };

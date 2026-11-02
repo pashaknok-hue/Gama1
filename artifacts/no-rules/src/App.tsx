@@ -41,6 +41,7 @@ function chapterName(age: number) {
   if (age < 7) return 'РАННЕЕ ДЕТСТВО';
   if (age < 13) return 'ДЕТСТВО';
   if (age < 18) return 'ПОДРОСТКОВЫЕ ГОДЫ';
+  if (age >= 65) return 'СТАРШИЙ ВОЗРАСТ';
   return 'ВЗРОСЛАЯ ЖИЗНЬ';
 }
 
@@ -374,9 +375,10 @@ export default function App() {
         </div>
       </div>
 
-      <DecisionModal event={pendingDecision} onChoose={choose} />
+      <DecisionModal life={life} event={pendingDecision} onChoose={choose} />
       {showActions && (
         <ActionsModal
+          life={life}
           actions={actions}
           onSelect={(actionId) => {
             applyAction(actionId);

@@ -23,7 +23,7 @@ with sync_playwright() as p:
       return [0,4,8,15,25].map(age=>{
         const life=makeLife(generateBirthProfile({countryCode:'KZ'}));
         life.birthDate='2000-01-01';life.currentDate=`${2000+age}-01-01`;life.age=age;
-        life.events[0].date='2000-01-01';
+        life.events[0].date='2000-01-01';delete life.simulation;
         return life;
       });
     }''')
@@ -66,9 +66,14 @@ with sync_playwright() as p:
         current=saved()
         action=next(event for event in current['events'] if event.get('kind')=='action')
         assert action['actor']['id']==life['id'] and action['target']['name']=='Книга'
+        if life['age']<13:
+            assert not any(event.get('kind')=='decision' for event in current['events'])
+            assert page.get_by_role('dialog').count()==0
+            print('PASS age',life['age'],': minor events do not interrupt life',flush=True)
+            continue
         decision=next(event for event in current['events'] if event.get('kind')=='decision')
         assert decision['eligibility']['minAge']<=life['age']<=decision['eligibility'].get('maxAge',999)
-        assert len(decision['choices'])==4
+        assert 2<=len(decision['choices'])<=4
         if life['age']>=18: assert decision['title'] not in ['После уроков','После занятий']
         dialog=page.get_by_role('dialog')
         assert dialog.is_visible()

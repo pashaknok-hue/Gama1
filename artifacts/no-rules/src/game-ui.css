@@ -860,3 +860,16 @@
 .nr-territories-toggle input { flex-shrink: 0; width: 20px; height: 20px; accent-color: var(--nr-amber); }
 .nr-setup-footer { flex-wrap: wrap; }
 .nr-setup-footer a { color: var(--nr-amber); text-decoration: underline; text-underline-offset: 3px; }
+.nr-choice:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.nr-life-muted { color: var(--nr-muted); font-size: 16px; line-height: 1.2; }
+.nr-life-overview { margin-top: 12px; font-size: 18px; overflow-wrap: anywhere; }
+.nr-life-overview summary, .nr-event-cause summary { cursor: pointer; color: var(--nr-amber); min-height: 32px; }
+.nr-life-overview p { margin: 6px 0; }
+.nr-life-overview h3 { font-weight: 400; color: var(--nr-amber); margin-top: 14px; }
+.nr-person-memory { border-top: 1px solid var(--nr-line); padding: 8px 0; }
+.nr-person-memory span { color: var(--nr-muted); }
+.nr-event-cause { margin-top: 6px; font-size: 16px; }
+.nr-event-cause p { font-size: 16px; }
+.nr-event-cause button { display: block; max-width: 100%; min-height: 44px; border: 1px solid var(--nr-line); padding: 4px 8px; background: var(--nr-bg); text-align: left; overflow-wrap: anywhere; }
+.nr-game-screen .nr-status-item.money { min-width: 0; }
+.nr-game-screen .nr-money-sub { min-width: 0; overflow-wrap: anywhere; }
