@@ -33,9 +33,9 @@ export default function CharacterStatus({ life }: { life: Life }) {
         <div className="nr-status-title">
           <Coins size={14} strokeWidth={1.8} />
           <span>деньги</span>
-          <strong>{familyFundsLabel(life.conditions.className)}</strong>
+          <strong>{life.simulation ? `${Math.round(life.simulation.person.money.cash)} у.е.` : familyFundsLabel(life.conditions.className)}</strong>
         </div>
-        <div className="nr-money-sub">по условиям семьи</div>
+        <div className="nr-money-sub">{life.simulation ? `долг ${Math.round(life.simulation.person.money.debt)} · ${life.age < 18 ? 'быт обеспечивает семья' : life.simulation.person.job.title}` : 'по условиям семьи'}</div>
       </div>
     </section>
   );

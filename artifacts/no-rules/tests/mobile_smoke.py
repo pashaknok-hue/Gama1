@@ -91,6 +91,7 @@ with sync_playwright() as p:
     page.get_by_test_id('button-cancel-new-life').click()
     assert json.loads(page.evaluate("localStorage.getItem('no-rules-life-v1')"))['id'] == original_id
     print('PASS: actions dialog and cancel restart preserve current life')
+    fixture.pop('simulation',None)
     fixture['birthDate']='2001-01-01'
     fixture['currentDate']='2004-01-01'
     fixture['age']=3

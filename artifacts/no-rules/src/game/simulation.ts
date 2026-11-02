@@ -2,7 +2,14 @@ import { birthDescription, birthdayDescription, characterSubject } from './event
 import { dateAge } from './generation';
 import type { BirthProfile, Life, LifeEvent, Stats } from './domain';
 import { automaticEvent, protagonist, type EventDraft } from './life-events';
-import { createDecision } from './decisions';
+import {
+  runCoreMonth,
+  coreDecision,
+  commitPlan,
+  observeEvent,
+  type CoreDraft,
+} from './causal-engine';
+import { ensureSimulation, applyEffects } from './causal-state';
 import { canDecide, pendingDecision } from './event-rules';
 
 let idSequence = 0;
@@ -27,7 +34,7 @@ export function makeLife(profile: BirthProfile): Life {
     target: { kind: 'place', name: profile.birthplace?.settlement ?? profile.region },
     context: 'Рождение ребёнка в семье.',
   };
-  return {
+  const life: Life = {
     id,
     character: profile.character,
     birthDate,
@@ -45,6 +52,8 @@ export function makeLife(profile: BirthProfile): Life {
     createdAt: now,
     updatedAt: now,
   };
+  ensureSimulation(life);
+  return life;
 }
 const actions = {
   sleep: {
@@ -144,13 +153,26 @@ export function availableActions(age: number, stats?: Stats): ActionInfo[] {
     }));
 }
 function effects(life: Life, change: Partial<Stats>) {
-  for (const key of Object.keys(change) as (keyof Stats)[])
-    life.stats[key] = Math.max(0, Math.min(100, life.stats[key] + (change[key] ?? 0)));
+  applyEffects(life, [{ stats: change }], 'ambient-tick', 'Ход повседневной жизни');
 }
-function record(life: Life, draft: EventDraft & Pick<LifeEvent, 'choices' | 'eligibility'>) {
+function record(life: Life, draft: CoreDraft) {
   const { effects: change, ...event } = draft;
   if (change) effects(life, change);
-  life.events.unshift({ ...event, id: randomId(), date: life.currentDate, age: life.age });
+  const recorded: LifeEvent = {
+    ...event,
+    id: draft.id ?? randomId(),
+    date: life.currentDate,
+    age: life.age,
+    cause: draft.cause ?? {
+      ruleId: draft.templateId,
+      facts: [`Возраст: ${life.age}.`, draft.context],
+      sourceEventIds: [],
+    },
+    appliedConsequences: draft.appliedConsequences ?? (change ? [{ stats: change }] : []),
+  };
+  life.events.unshift(recorded);
+  observeEvent(life, recorded);
+  return recorded;
 }
 function milestone(life: Life) {
   const content: Record<number, [string, string]> = {
@@ -219,6 +241,9 @@ function nextMonth(date: string) {
 function progress(life: Life, months: number, random: () => number, actionId?: ActionId): Life {
   if (!Number.isInteger(months) || months < 1 || months > 1200 || pendingDecision(life))
     return life;
+  if (actionId && !availableActions(life.age, life.stats).some((action) => action.id === actionId))
+    return life;
+  ensureSimulation(life);
   for (let month = 0; month < months; month++) {
     if (pendingDecision(life)) break;
     if (
@@ -231,10 +256,25 @@ function progress(life: Life, months: number, random: () => number, actionId?: A
     life.age = dateAge(life.currentDate, life.birthDate);
     if (life.age > oldAge) milestone(life);
     effects(life, { energy: -1, happiness: -1 });
-    if (actionId && availableActions(life.age).some((action) => action.id === actionId))
-      record(life, actionEvent(life, actionId));
+    if (actionId && availableActions(life.age).some((action) => action.id === actionId)) {
+      const action = record(life, actionEvent(life, actionId));
+      const skill =
+        actionId === 'read' || actionId === 'learn'
+          ? 'learning'
+          : actionId === 'create'
+            ? 'craft'
+            : actionId === 'help'
+              ? 'social'
+              : null;
+      if (skill) {
+        const consequences = [{ skills: { [skill]: 0.1 } }];
+        applyEffects(life, consequences, action.id, action.description);
+        action.appliedConsequences?.push(...consequences);
+      }
+    }
+    for (const draft of runCoreMonth(life, random)) record(life, draft);
     record(life, automaticEvent(life, random));
-    const decision = createDecision(life, random);
+    const decision = coreDecision(life);
     if (decision) record(life, decision);
     life.updatedAt = new Date().toISOString();
   }
@@ -264,6 +304,7 @@ export function resolveChoice(life: Life, eventId: string, choiceIndex: number):
     return life;
   const choice = event.choices?.[choiceIndex];
   if (!choice) return life;
+  if (!commitPlan(life, event, choiceIndex)) return life;
   event.outcome = choice.result;
   event.resolution = { actor: protagonist(life), choiceIndex };
   effects(life, choice.effects);

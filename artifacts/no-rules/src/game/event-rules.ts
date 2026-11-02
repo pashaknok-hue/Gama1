@@ -1,8 +1,21 @@
+import { canApplyPlan } from './causal-state';
 import type { Life, LifeEvent } from './domain';
+
+const retiredMinorRules = new Set([
+  'early-evening',
+  'early-outing',
+  'child-afternoon',
+  'child-hobby',
+  'teen-weekend',
+  'teen-learning',
+  'adult-personal-time',
+  'adult-idea',
+]);
 
 export function canDecide(life: Life, event: LifeEvent): boolean {
   if (
     !event.choices?.length ||
+    retiredMinorRules.has(event.templateId ?? '') ||
     event.outcome ||
     (event.kind && event.kind !== 'decision') ||
     event.date > life.currentDate
@@ -21,6 +34,14 @@ export function pendingDecision(life: Life | null): LifeEvent | null {
 // Some old saves contain imperative infant records without any actor/context.
 // Do not invent what happened or rewrite the saved history: clarify it in the view.
 export function journalPresentation(event: LifeEvent) {
+  if (retiredMinorRules.has(event.templateId ?? ''))
+    return {
+      title: event.title,
+      description:
+        (event.outcome || event.description) +
+        ' Эта старая необязательная запись не требует ответа.',
+      archived: true,
+    };
   if (
     !event.kind &&
     ((event.age < 3 &&
@@ -38,4 +59,13 @@ export function journalPresentation(event: LifeEvent) {
     };
   }
   return { title: event.title, description: event.outcome || event.description, archived: false };
+}
+
+export function canChoose(life: Life, event: LifeEvent, index: number): boolean {
+  return (
+    canDecide(life, event) &&
+    Number.isInteger(index) &&
+    !!event.choices?.[index] &&
+    canApplyPlan(life, event.choices[index].plan)
+  );
 }

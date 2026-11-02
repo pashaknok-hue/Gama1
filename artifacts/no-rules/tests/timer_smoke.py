@@ -85,6 +85,7 @@ with sync_playwright() as p:
     print('PASS: save respects pause; loading runs a single timer without resetting progress')
 
     fixture = saved(page)
+    fixture.pop('simulation',None)
     fixture['birthDate'] = fixture['currentDate'] = '2001-01-01'
     fixture['age'] = 0
     fixture['events'] = [dict(fixture['events'][-1], date='2001-01-01', age=0)]
