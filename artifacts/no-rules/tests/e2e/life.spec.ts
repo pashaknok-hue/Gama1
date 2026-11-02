@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('Automatic time, pause, resume, 4x and reload preserve a newborn on mobile', async ({
+test('Automatic time, pause, resume, 4x and reload preserve an adult on mobile', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -9,7 +9,10 @@ test('Automatic time, pause, resume, 4x and reload preserve a newborn on mobile'
   await page.goto('/');
   await page.evaluate(async () => {
     const { seededLife } = await import('/src/game/seeded-life.ts');
-    localStorage.setItem('no-rules-life-v1', JSON.stringify(seededLife(772)));
+    const {ensureSimulation}=await import('/src/game/causal-state.ts');
+    const life=seededLife(772);life.age=30;life.currentDate=String(Number(life.birthDate.slice(0,4))+30)+life.birthDate.slice(4);delete life.simulation;
+    const s=ensureSimulation(life);s.person.flags['training-planned']=true;s.person.flags['friend-request-answered']=true;s.person.money.cash=0;s.person.job={status:'retired',title:'Распорядок',income:s.person.money.expenses};
+    localStorage.setItem('no-rules-life-v1', JSON.stringify(life));
   });
   await page.reload();
   await page.getByTestId('button-load-life').click();

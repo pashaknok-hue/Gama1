@@ -374,12 +374,17 @@ export function automaticEvent(life: Life, random: () => number): EventDraft | n
     if (entry.templateId && !lastSeen.has(entry.templateId))
       lastSeen.set(entry.templateId, monthIndex(entry.date));
   }
-  // Persistent per-template cooldown, independent of how many NPC events intervened.
+  // Quiet months are intentional. Childhood observations are rare and never cycle.
+  const ids = new Set(templates.map((t) => t.id));
+  const observations = life.events.filter((e) => e.templateId && ids.has(e.templateId));
+  const interval = life.age < 18 ? 12 : 6;
+  if (observations.some((e) => now - monthIndex(e.date) < interval)) return null;
+  // Persistent per-template cooldown, independent of NPC messages and reloads.
   const eligible = templates.filter(
     (t) =>
       life.age >= t.minAge &&
       life.age <= (t.maxAge ?? Infinity) &&
-      now - (lastSeen.get(t.id) ?? -Infinity) >= 6,
+      (life.age < 18 ? !lastSeen.has(t.id) : now - (lastSeen.get(t.id) ?? -Infinity) >= 36),
   );
   if (!eligible.length) return null; // A quiet month is better than a forced duplicate.
   const oldest = Math.min(...eligible.map((t) => lastSeen.get(t.id) ?? -Infinity));

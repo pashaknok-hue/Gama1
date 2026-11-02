@@ -1,3 +1,4 @@
+import { monthDurationMs } from './game/pacing';
 import { yearWord } from './game/event-text';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -25,6 +26,7 @@ import {
   advanceTime,
   availableActions,
   makeLife,
+  advanceToNextDecision,
   resolveChoice,
   type ActionId,
 } from './game/simulation';
@@ -232,7 +234,8 @@ export default function App() {
   useGameClock({
     lifeId: life?.id,
     running: playing && !pendingDecision,
-    speed,
+    speed: life && life.age < 18 ? 1 : speed,
+    monthDurationMs: monthDurationMs(life?.age ?? 0),
     onTick: () => {
       setLife((current) => {
         if (!current || getPendingDecision(current)) return current;
@@ -259,6 +262,15 @@ export default function App() {
   const passTime = (months: number) => {
     if (!life || pendingDecision) return;
     setLife(advanceTime(structuredClone(life), months));
+  };
+
+  const skipToChoice = () => {
+    if (!life || pendingDecision) return;
+    const next = structuredClone(life);
+    const months = advanceToNextDecision(next);
+    setLife(next);
+    setPlaying(false);
+    if (!getPendingDecision(next)) setToast(`За ${months} месяцев новых решений не возникло. Время остановлено.`);
   };
 
   const choose = (eventId: string, choiceIndex: number) => {
@@ -359,6 +371,8 @@ export default function App() {
         <CharacterStatus life={life} />
 
         <TimeControls
+          age={life.age}
+          onNextDecision={skipToChoice}
           currentDate={life.currentDate}
           playing={playing}
           speed={speed}

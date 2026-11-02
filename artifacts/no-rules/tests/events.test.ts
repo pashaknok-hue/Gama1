@@ -58,7 +58,7 @@ test('Infancy: no player actions, no decisions; the timer produces attributed ca
   }
   assert.equal(JSON.stringify([life.character, life.family, life.location]), identity);
   assert.ok(life.events.some((e) => e.actor?.kind === 'family' && e.target?.id === life.id));
-  assert.ok(life.events.some((e) => e.actor?.kind === 'world'));
+  assert.ok(life.events.filter((e) => e.kind === 'life').length <= 3);
 });
 
 for (const age of [3, 6, 12, 13, 17, 18, 35, 70]) {
@@ -70,8 +70,13 @@ for (const age of [3, 6, 12, 13, 17, 18, 35, 70]) {
     assert.equal(ids.includes('explore'), age >= 10);
     advanceTime(life, 1, () => 0);
     const decision = pendingDecision(life);
-    if(age<13){assert.equal(decision,null,'Minor life events do not interrupt childhood');return;}
-    assert.ok(decision && decision.choices && decision.choices.length >= 2 && decision.choices.length <= 4);
+    if (age < 13 && age !== 3) {
+      assert.equal(decision, null, 'Minor life events do not interrupt childhood');
+      return;
+    }
+    assert.ok(
+      decision && decision.choices && decision.choices.length >= 2 && decision.choices.length <= 4,
+    );
     assertEvent(decision!);
     assert.ok(canDecide(life, decision!));
     const text = JSON.stringify(decision);
@@ -85,12 +90,12 @@ for (const age of [3, 6, 12, 13, 17, 18, 35, 70]) {
       locked,
       'Time cannot pass while an eligible decision is pending',
     );
-    resolveChoice(life, decision!.id, decision!.choices!.length-1);
+    resolveChoice(life, decision!.id, decision!.choices!.length - 1);
     assert.equal(pendingDecision(life), null);
     assert.equal(decision!.resolution?.actor.id, life.id);
     assert.equal(decision!.outcome, decision!.choices!.at(-1)!.result);
     const resolved = JSON.stringify(life.stats);
-    resolveChoice(life, decision!.id, decision!.choices!.length-1);
+    resolveChoice(life, decision!.id, decision!.choices!.length - 1);
     assert.equal(JSON.stringify(life.stats), resolved, 'A result cannot be applied twice');
     const date = life.currentDate;
     advanceTime(life, 1, () => 0.99);
@@ -147,12 +152,13 @@ test('Automatic templates have a rolling cooldown, also across save/reload', () 
       .slice(0, 3)
       .map((e) => e.templateId);
     advanceTime(life, 1, () => 0);
-    assert.ok(!recent.includes(life.events[0].templateId));
+    for (const event of life.events.filter((e) => e.date === life.currentDate))
+      assert.ok(!recent.includes(event.templateId));
     assert.ok(saveLife(life));
     life = loadLife()!;
   }
   assert.ok(
-    new Set(life.events.filter((e) => e.kind === 'life').map((e) => e.templateId)).size >= 4,
+    new Set(life.events.filter((e) => e.kind === 'life').map((e) => e.templateId)).size === 2,
   );
 });
 
@@ -161,14 +167,14 @@ test('A year is twelve chronological months, with every birthday and the first d
   advanceTime(life, 12, () => 0.99);
   assert.equal(life.currentDate, '2001-01-01');
   assert.equal(life.age, 1);
-  assert.equal(new Set(life.events.filter((e) => e.kind === 'life').map(e=>e.date)).size, 12);
+  assert.equal(new Set(life.events.filter((e) => e.kind === 'life').map((e) => e.date)).size, 1);
   assert.equal(life.events.filter((e) => e.templateId === 'milestone-1').length, 1);
   const child = lifeAt(2);
   child.currentDate = '2002-12-01';
   advanceTime(child, 12, () => 0);
-  assert.equal(child.currentDate, '2003-12-01');
+  assert.equal(child.currentDate, '2003-01-01');
   assert.equal(child.age, 3);
-  assert.equal(pendingDecision(child),null,'Turning three alone is not an important decision');
+  assert.equal(pendingDecision(child)?.templateId, 'preschool-interest');
   const dates = life.events.map((e) => e.date);
   assert.deepEqual(dates, [...dates].sort().reverse());
 });
@@ -181,7 +187,7 @@ test('All four life stages remain coherent over thirty years', () => {
     advanceTime(life, 1, random);
     const pending = pendingDecision(life);
     if (pending) {
-      assert.ok(life.age >= 13);
+      assert.ok(life.age >= 3);
       assert.ok(
         life.age >= pending.eligibility!.minAge &&
           life.age <= (pending.eligibility!.maxAge ?? Infinity),
@@ -193,7 +199,7 @@ test('All four life stages remain coherent over thirty years', () => {
     }
   }
   assert.equal(life.age, 30);
-  assert.deepEqual([...stages].sort(), ['adult', 'teen']);
+  assert.deepEqual([...stages].sort(), ['adult', 'early', 'teen']);
   life.events.forEach(assertEvent);
   const decisions = life.events.filter((e) => e.kind === 'decision');
   const month = (date: string) => Number(date.slice(0, 4)) * 12 + Number(date.slice(5, 7));

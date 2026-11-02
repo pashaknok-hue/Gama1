@@ -275,7 +275,8 @@ function progress(
           context: 'Наступила годовщина рождения.',
         });
     }
-    effects(life, { energy: -1, happiness: -1 });
+    // Ordinary recovery is state evolution, not a reason to spam a diary entry.
+    effects(life, { energy: 2 });
     if (actionId && availableActions(life.age).some((action) => action.id === actionId)) {
       const action = record(life, actionEvent(life, actionId));
       if (life.age >= 13 && actionId === 'walk')
@@ -335,4 +336,17 @@ export function resolveChoice(life: Life, eventId: string, choiceIndex: number):
   effects(life, choice.effects);
   life.updatedAt = life.rng ? `${life.currentDate}T12:00:00.000Z` : new Date().toISOString();
   return life;
+}
+
+// Bound runaway searches in worlds where no future decision is currently possible.
+export function advanceToNextDecision(life: Life, limit = 1200): number {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 1200) return 0;
+  let months = 0;
+  while (months < limit && !pendingDecision(life)) {
+    const before = life.currentDate;
+    advanceTime(life, 1);
+    if (life.currentDate === before) break;
+    months++;
+  }
+  return months;
 }

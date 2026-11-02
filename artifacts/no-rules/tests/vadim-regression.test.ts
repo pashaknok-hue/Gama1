@@ -25,14 +25,14 @@ test('Vadim Yanyuk, Kyiv, 3 Dec 2000: January–March 2001 never repeat infant a
     life = loadLife()!;
   }
   const entries = life.events.filter((e) => e.date > '2000-12-03');
-  assert.equal(entries.length, 3);
+  assert.equal(entries.length, 1);
   assert.ok(entries.every((e) => e.kind === 'life' && !e.choices));
   assert.ok(
     entries.every(
       (e) => (e.actor?.id !== life.id && e.target?.id === life.id) || e.actor?.kind === 'world',
     ),
   );
-  assert.equal(new Set(entries.map((e) => e.templateId)).size, 3);
+  assert.equal(new Set(entries.map((e) => e.templateId)).size, 1);
   assert.equal(entries.filter((e) => e.templateId === 'care-embrace').length, 1);
   assert.ok(
     !entries.some((e) =>

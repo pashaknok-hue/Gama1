@@ -18,7 +18,7 @@ test('Reported Kyiv birth: automatic January–March 2001 events do not repeat c
   await page.getByTestId('button-load-life').click();
   const observed = [];
   for (const expectedDate of ['2001-01-03', '2001-02-03', '2001-03-03']) {
-    await page.clock.runFor(10000);
+    await page.clock.runFor(417);
     const life = await page.evaluate(() => JSON.parse(localStorage.getItem('no-rules-life-v1')!));
     expect(life.currentDate).toBe(expectedDate);
     expect(life.age).toBe(0);
@@ -37,7 +37,7 @@ test('Reported Kyiv birth: automatic January–March 2001 events do not repeat c
   );
   expect(events.filter((e) => e.title === 'Обнять ребёнка')).toHaveLength(0);
   expect(events.filter((e) => e.templateId === 'care-embrace').length).toBeLessThanOrEqual(1);
-  expect(new Set(events.map((e) => e.templateId)).size).toBe(3);
+  expect(new Set(events.map((e) => e.templateId)).size).toBe(1);
   expect(events.every((e) => e.kind === 'life' && !e.choices)).toBe(true);
   expect(errors).toEqual([]);
 });

@@ -1,49 +1,45 @@
 import { useEffect, useRef } from 'react';
 import type { TimeSpeed } from '../components/game/TimeControls';
 
-// One simulated month takes ten real seconds at 1×; no offline catch-up.
-const MONTH_DURATION_MS = 10_000;
-
 export function useGameClock({
   lifeId,
   running,
   speed,
+  monthDurationMs = 10000,
   onTick,
 }: {
   lifeId: string | undefined;
   running: boolean;
   speed: TimeSpeed;
+  monthDurationMs?: number;
   onTick: () => void;
 }) {
-  const remaining = useRef(MONTH_DURATION_MS);
-  const tick = useRef(onTick);
-
+  // A fraction survives pause and changes of age/rate; never restart a partial month.
+  const remaining = useRef(1),
+    tick = useRef(onTick);
   useEffect(() => {
     tick.current = onTick;
   }, [onTick]);
-
   useEffect(() => {
-    remaining.current = MONTH_DURATION_MS;
+    remaining.current = 1;
   }, [lifeId]);
-
   useEffect(() => {
     if (!lifeId || !running) return;
-
-    let started = performance.now();
-    let timeout: number;
+    const duration = monthDurationMs / speed;
+    let started = performance.now(),
+      timeout: number;
     const advanceMonth = () => {
-      remaining.current = MONTH_DURATION_MS;
+      const elapsed = (performance.now() - started) / duration;
+      // Carry small scheduling delays so twelve fractional intervals total one year.
+      remaining.current = Math.max(0.5, 1 + Math.min(0, remaining.current - elapsed));
       started = performance.now();
       tick.current();
-      timeout = window.setTimeout(advanceMonth, MONTH_DURATION_MS / speed);
+      timeout = window.setTimeout(advanceMonth, Math.ceil(remaining.current * duration));
     };
-    timeout = window.setTimeout(advanceMonth, remaining.current / speed);
-
+    timeout = window.setTimeout(advanceMonth, Math.ceil(remaining.current * duration));
     return () => {
       window.clearTimeout(timeout);
-      // Freeze the unfinished month on pause; convert elapsed time at the old
-      // speed before a speed change. Ordinary renders never restart this timer.
-      remaining.current = Math.max(0, remaining.current - (performance.now() - started) * speed);
+      remaining.current = Math.max(0, remaining.current - (performance.now() - started) / duration);
     };
-  }, [lifeId, running, speed]);
+  }, [lifeId, running, speed, monthDurationMs]);
 }

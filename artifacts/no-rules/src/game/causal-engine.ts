@@ -1,3 +1,4 @@
+import { childhoodDecisions } from './childhood-decisions';
 import { eventCategory } from './event-category';
 import { lifePathRules } from './life-paths';
 import type { Life, LifeEvent, EventParticipant } from './domain';
@@ -130,7 +131,7 @@ export function runCoreMonth(life: Life, random: () => number): CoreDraft[] {
       ),
     );
   }
-  if (life.age >= 6 && !Object.values(state.npcs).some((npc) => npc.role === 'friend')) {
+  if (life.age >= 3 && !Object.values(state.npcs).some((npc) => npc.role === 'friend')) {
     const npc = addNpc(life, 'friend', random);
     events.push(
       event(
@@ -388,7 +389,7 @@ export function coreDecision(life: Life): CoreDraft | null {
     hero = protagonist(life);
   const friend = Object.values(state.npcs).find((npc) => npc.role === 'friend');
   const relation = friend ? state.relationships[friend.id] : null;
-  const rules: Rule[] = lifePathRules(life);
+  const rules: Rule[] = [...childhoodDecisions(life), ...lifePathRules(life)];
   const add = (rule: Rule) => rules.push(rule);
   add({
     id: 'training-path',
