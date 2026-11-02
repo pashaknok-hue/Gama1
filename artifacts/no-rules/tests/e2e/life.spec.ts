@@ -117,7 +117,7 @@ test('Important choices conceal unknown results; a full life fits storage and lo
     await page.evaluate(() => JSON.parse(localStorage.getItem('no-rules-life-v1')!).character.name),
   ).toBe(old.name);
   await page.getByTestId('button-open-actions').click();
-  await page.locator('[data-testid="life-overview"] summary').click();
+  await page.locator('[data-testid="life-overview"] > summary').click();
   await expect(page.getByTestId('life-overview')).toBeVisible();
   expect(errors).toEqual([]);
 });

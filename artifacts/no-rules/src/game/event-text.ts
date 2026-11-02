@@ -7,7 +7,7 @@ export function isolateName(name: string): string {
 
 export function characterSubject(character: Character): string {
   return character.personalName?.status === 'missing' && character.name === 'Имя не указано'
-    ? 'Ребёнок'
+    ? 'Имя не указано'
     : isolateName(character.name);
 }
 

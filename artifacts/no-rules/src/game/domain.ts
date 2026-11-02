@@ -34,6 +34,7 @@ export type LifeEvent = {
   choices?: { plan?: CausalPlan; label: string; result: string; effects: Partial<Stats> }[]; outcome?: string;
 };
 export type Life = {
+  playback?: {mode: 'auto' | 'paused' | 'choices'};
   rng?: RandomState;
   id: string; character: Character; birthDate: string; location: { country: string; region: string; birthplace?: Birthplace };
   family: FamilyMember[]; conditions: { className: string; home: string; resources: string[] };

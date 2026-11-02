@@ -1,3 +1,6 @@
+import { repairMissingNames } from './identity-repair';
+import { birthdayGift } from './finance';
+import { startProject } from './life-development';
 import { randomState, nextRandom } from './random';
 import { eventCategory } from './event-category';
 import { birthDescription, birthdayDescription, characterSubject } from './event-text';
@@ -179,6 +182,8 @@ function record(life: Life, draft: CoreDraft) {
     appliedConsequences: draft.appliedConsequences ?? (change ? [{ stats: change }] : []),
   };
   life.events.unshift(recorded);
+  if (recorded.kind === 'milestone' && /^(milestone-|birthday-)/.test(recorded.templateId ?? ''))
+    recorded.description += birthdayGift(life, ensureSimulation(life), recorded.id);
   observeEvent(life, recorded);
   return recorded;
 }
@@ -233,7 +238,7 @@ function actionEvent(life: Life, id: ActionId): EventDraft {
     context:
       life.age < 13
         ? 'Посильное занятие, при необходимости с поддержкой взрослого.'
-        : 'Самостоятельное занятие по возможностям персонажа.',
+        : 'Самостоятельное занятие по силам.',
     effects: action.effects,
   };
 }
@@ -262,9 +267,20 @@ function progress(
     const oldAge = life.age;
     life.currentDate = nextLifeMonth(life.currentDate, life.birthDate);
     life.age = dateAge(life.currentDate, life.birthDate);
+    const repaired = repairMissingNames(life, random);
+    if (repaired)
+      record(life, {
+        kind: 'milestone',
+        templateId: 'identity-repair',
+        title: 'Заполнены отсутствующие имена',
+        description: `В старом сохранении уточнены отсутствующие имена: ${repaired}. Использованы отмеченные источники или резервный набор; прежние записи и существующие имена не переписаны. Местное происхождение резервных имён не подтверждено.`,
+        actor: { kind: 'world', name: 'Данные сохранённой истории' },
+        target: protagonist(life),
+        context: 'Однократное заполнение явных заглушек, без создания прошлых встреч.',
+      });
     if (life.age > oldAge) {
       milestone(life);
-      if (!life.events.some((e) => e.age === life.age && e.kind === 'milestone'))
+      if (!life.events.some((e) => e.templateId === `milestone-${life.age}` || e.templateId === `birthday-${life.age}`))
         record(life, {
           kind: 'milestone',
           templateId: `birthday-${life.age}`,
@@ -279,6 +295,7 @@ function progress(
     effects(life, { energy: 2 });
     if (actionId && availableActions(life.age).some((action) => action.id === actionId)) {
       const action = record(life, actionEvent(life, actionId));
+      if (actionId === 'create') startProject(life, action.id);
       if (life.age >= 13 && actionId === 'walk')
         applyEffects(
           life,

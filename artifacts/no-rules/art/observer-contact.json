@@ -1,0 +1,18 @@
+{
+  "groundY": 30,
+  "width": 24,
+  "height": 32,
+  "frames": [
+    "idle-0",
+    "idle-1",
+    "walk-0",
+    "walk-1",
+    "walk-2",
+    "walk-3",
+    "sit-0",
+    "sit-1",
+    "sleep-0",
+    "sleep-1"
+  ],
+  "author": "Original NO RULES recipe; no external sprite assets"
+}

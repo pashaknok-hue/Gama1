@@ -1,3 +1,4 @@
+import { reconcile } from '../src/game/finance';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -114,6 +115,17 @@ test(
       for (const q of life.simulation!.queue) {
         assert.ok(ids.has(q.sourceEventId));
         if (q.status !== 'pending') assert.ok(q.completedEventId && ids.has(q.completedEventId));
+      }
+      assert.ok(reconcile(life.simulation!), 'Every financial account must reconcile');
+      assert.equal(
+        life.simulation!.school!.status,
+        'completed',
+        'Full childhood must produce a school graduation',
+      );
+      for (const entry of life.simulation!.finance!.entries) {
+        assert.ok(entry.reason.length > 0);
+        if (entry.sourceEventId)
+          assert.ok(ids.has(entry.sourceEventId), 'Transaction source must exist');
       }
       for (const npc of Object.values(life.simulation!.npcs)) {
         assert.ok(npc.name.trim());

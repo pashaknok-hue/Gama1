@@ -557,6 +557,9 @@ importers:
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      pixelbolt:
+        specifier: 0.10.0
+        version: 0.10.0
       react:
         specifier: 'catalog:'
         version: 19.1.0
@@ -2594,6 +2597,11 @@ packages:
 
   pino@9.14.0:
     resolution: {integrity: sha512-8OEwKp5juEvb/MjpIc4hjqfgCNysrS94RIOMXYvpYCdm/jglrKEiAYmiumbmGhCvs+IcInsphYDFwqrjr7398w==}
+    hasBin: true
+
+  pixelbolt@0.10.0:
+    resolution: {integrity: sha512-b888ZXFmbGScFaEO8EwCSy51c+x+Xz2hHKj2HcYbMWtF6YHKD37HvUoYyOyOmYtM6FREacF289Wxdvj5W83D7w==}
+    engines: {node: '>=20'}
     hasBin: true
 
   playwright-core@1.64.1:
@@ -5030,6 +5038,8 @@ snapshots:
       safe-stable-stringify: 2.5.0
       sonic-boom: 4.2.1
       thread-stream: 3.1.0
+
+  pixelbolt@0.10.0: {}
 
   playwright-core@1.64.1: {}
 

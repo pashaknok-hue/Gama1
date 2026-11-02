@@ -96,7 +96,7 @@ export function lifePathRules(life: Life): PathRule[] {
         ...draft(
           'creative-path',
           'Показать свою работу?',
-          'Личный проект готов к первой открытой встрече. Результат зависит от продолжения работы, а не гарантирует известность.',
+          `Проект «${s.development?.project?.title}» готов к первой открытой встрече. Показ не гарантирует известность.`,
           ['Есть практика самостоятельного творчества.'],
           source('action-create'),
         ),
@@ -109,7 +109,7 @@ export function lifePathRules(life: Life): PathRule[] {
               effects: [{ flags: { 'creative-chosen': true }, stats: { energy: -4 } }],
               delayed: {
                 afterMonths: 9,
-                title: 'Первый открытый показ',
+                title: `Первый показ: ${s.development?.project?.title}`,
                 description:
                   'Подготовка завершилась встречей с небольшой аудиторией. Обратная связь помогла развить мастерство.',
                 actor: hero,
@@ -276,5 +276,5 @@ export function lifePathRules(life: Life): PathRule[] {
       ],
     }),
   });
-  return [...rules, ...advancedPaths(life)];
+  return [...rules.filter(rule=>rule.id!=='creative-path'||s.development?.project?.status==='ready'), ...advancedPaths(life)];
 }

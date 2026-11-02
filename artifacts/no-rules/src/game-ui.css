@@ -894,3 +894,17 @@
   .nr-game-screen .nr-time-controls { grid-column: 1 / -1; grid-row: 2; }
   .nr-game-screen .nr-time-state { display: none; }
 }
+
+.nr-auto-choice { display:flex; align-items:center; gap:8px; min-height:44px; font-size:16px; margin-top:10px; }
+.nr-auto-choice input { width:20px; height:20px; accent-color:var(--nr-amber); }
+.nr-prototype { min-height:100dvh; background:#20343d; color:#eadbb4; padding:20px; box-sizing:border-box; font-family:monospace; }
+.nr-prototype header,.nr-prototype nav,.nr-prototype p { max-width:760px; margin:12px auto; }
+.nr-prototype h1 { font-size:clamp(18px,4vw,28px); }.nr-prototype a{color:#a9d8c2;}
+.nr-prototype button,.nr-prototype select { min-height:44px; padding:8px 14px; border:1px solid #9aaf98; background:#2b4c51; color:#eadbb4; margin:4px; font:inherit; }
+.nr-prototype button[aria-pressed=true]{background:#ba664d;color:#fff3d0;}
+.nr-proto-stage { height:260px; position:relative; max-width:760px; margin:20px auto; background:repeating-linear-gradient(90deg,#2b4147 0 23px,#304c50 24px);overflow:hidden; }
+.nr-proto-floor { position:absolute; bottom:30px; height:2px; width:100%; background:#d5bf8f; }
+.nr-proto-stage img { position:absolute; left:50%; transform:translateX(-50%); image-rendering:pixelated; image-rendering:crisp-edges; }
+.nr-life-scene .nr-scene-time { max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+
+.nr-life-scene .nr-scene-caption { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

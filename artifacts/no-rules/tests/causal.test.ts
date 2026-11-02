@@ -230,7 +230,9 @@ test('NPC autonomously contacts an acquaintance without pausing for a minor even
   const life = lifeAt(8),
     s = ensureSimulation(life),
     friend = addNpc(life, 'friend', () => 0.4);
-  s.relationships[friend.id].lastContactMonth -= 8;
+  s.relationships[friend.id].lastContactMonth -= 18;
+  const intro={id:'intro-'+friend.id,title:'Знакомство на занятии',description:'Первая общая игра.',date:'2006-01-01',age:6,kind:'life' as const,templateId:'new-friend'};
+  life.events.push(intro);friend.memory.push({id:'memory-'+friend.id,eventId:intro.id,date:intro.date,summary:intro.description});
   friend.stats.happiness = 40;
   advanceTime(life, 1, () => 0.99);
   const contact = life.events.find((e) => e.templateId === `npc-contact-${friend.id}`)!;
@@ -321,8 +323,10 @@ test('NPC native RTL names remain unchanged and isolated in a Russian causal eve
     state = ensureSimulation(life),
     friend = addNpc(life, 'friend', () => 0.4);
   friend.name = 'أحمد علي';
+  const intro={id:'intro-'+friend.id,title:'Знакомство на занятии',description:'Первая общая игра.',date:'2006-01-01',age:6,kind:'life' as const,templateId:'new-friend'};
+  life.events.push(intro);friend.memory.push({id:'memory-'+friend.id,eventId:intro.id,date:intro.date,summary:intro.description});
   friend.stats.happiness = 40;
-  state.relationships[friend.id].lastContactMonth -= 8;
+  state.relationships[friend.id].lastContactMonth -= 18;
   advanceTime(life, 1, () => 0.99);
   const contact = life.events.find((e) => e.templateId === `npc-contact-${friend.id}`)!;
   assert.ok(contact.description.includes(`\u2068${friend.name}\u2069`));

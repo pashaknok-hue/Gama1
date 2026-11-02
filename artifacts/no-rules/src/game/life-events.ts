@@ -382,6 +382,7 @@ export function automaticEvent(life: Life, random: () => number): EventDraft | n
   // Persistent per-template cooldown, independent of NPC messages and reloads.
   const eligible = templates.filter(
     (t) =>
+      (!['teen-project','adult-project'].includes(t.id) || !!life.simulation?.development?.project) &&
       life.age >= t.minAge &&
       life.age <= (t.maxAge ?? Infinity) &&
       (life.age < 18 ? !lastSeen.has(t.id) : now - (lastSeen.get(t.id) ?? -Infinity) >= 36),
@@ -390,5 +391,7 @@ export function automaticEvent(life: Life, random: () => number): EventDraft | n
   const oldest = Math.min(...eligible.map((t) => lastSeen.get(t.id) ?? -Infinity));
   const pool = eligible.filter((t) => (lastSeen.get(t.id) ?? -Infinity) === oldest);
   const template = pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))];
-  return { ...template.build(life), templateId: template.id, kind: 'life' };
+  const draft={ ...template.build(life), templateId: template.id, kind: 'life' as const };
+  if(['teen-project','adult-project'].includes(template.id)){const project=life.simulation!.development!.project!;draft.title=`Проект «${project.title}»`;draft.description=`${characterSubject(life.character)} возвращается к работе «${project.title}». Готовность: ${project.progress}%.`;draft.target={kind:'object',name:project.title};}
+  return draft;
 }

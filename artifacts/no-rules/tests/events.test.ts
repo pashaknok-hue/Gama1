@@ -199,7 +199,7 @@ test('All four life stages remain coherent over thirty years', () => {
     }
   }
   assert.equal(life.age, 30);
-  assert.deepEqual([...stages].sort(), ['adult', 'early', 'teen']);
+  assert.deepEqual([...stages].sort(), ['adult', 'child', 'early', 'teen']);
   life.events.forEach(assertEvent);
   const decisions = life.events.filter((e) => e.kind === 'decision');
   const month = (date: string) => Number(date.slice(0, 4)) * 12 + Number(date.slice(5, 7));

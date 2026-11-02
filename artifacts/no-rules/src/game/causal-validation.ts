@@ -1,3 +1,4 @@
+import { validDevelopment } from './validate-development';
 import type { SimulationState } from './causal-state';
 const object = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -143,9 +144,17 @@ export function validSimulation(v: unknown): v is SimulationState {
       npc.roles !== undefined &&
       (!Array.isArray(npc.roles) ||
         !npc.roles.every((role) =>
-          ['parent', 'sibling', 'friend', 'neighbor', 'colleague', 'partner', 'child'].includes(
-            String(role),
-          ),
+          [
+            'parent',
+            'sibling',
+            'friend',
+            'neighbor',
+            'colleague',
+            'partner',
+            'child',
+            'teacher',
+            'classmate',
+          ].includes(String(role)),
         ))
     )
       return false;
@@ -153,9 +162,17 @@ export function validSimulation(v: unknown): v is SimulationState {
       !object(npc) ||
       npc.id !== id ||
       typeof npc.name !== 'string' ||
-      !['parent', 'sibling', 'friend', 'neighbor', 'colleague', 'partner', 'child'].includes(
-        String(npc.role),
-      ) ||
+      ![
+        'parent',
+        'sibling',
+        'friend',
+        'neighbor',
+        'colleague',
+        'partner',
+        'child',
+        'teacher',
+        'classmate',
+      ].includes(String(npc.role)) ||
       !finite(npc.age) ||
       !Number.isInteger(npc.bornMonth) ||
       !strings(npc.traits) ||
@@ -198,5 +215,5 @@ export function validSimulation(v: unknown): v is SimulationState {
       return false;
     ids.add(item.id);
   }
-  return true;
+  return validDevelopment(v as unknown as SimulationState);
 }

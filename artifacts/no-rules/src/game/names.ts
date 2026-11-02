@@ -1,3 +1,4 @@
+import lifeProfiles from '../../data/life-profiles.json';
 import { russianSpelling } from './name-transcription';
 import sourcePools from '../../data/name-pools.json';
 import type { Gender } from './domain';
@@ -18,6 +19,7 @@ export type PersonalName = {
   transcriptionSources?: string[];
   familyRule?: string;
   source?: string;
+  selection?: 'regional-or-country' | 'language-group' | 'reserve';
 };
 export type NamePool = {
   language: string;
@@ -56,18 +58,6 @@ export function localesFor(country: WorldCountry, settlement?: Settlement): stri
     if (/Odisha|Orissa/.test(region)) return ['py_or_IN', 'en_IN'];
   }
   return country.nameLocales;
-}
-function missing() {
-  return {
-    name: 'Имя не указано',
-    personalName: {
-      givenName: '',
-      familyName: '',
-      language: 'und',
-      namingContext: 'missing',
-      status: 'missing' as const,
-    },
-  };
 }
 function person(
   locale: string,
@@ -117,9 +107,24 @@ export function generateFamilyNames(
   random: () => number = Math.random,
   settlement?: Settlement,
 ) {
-  const locales = localesFor(country, settlement).filter((locale) => namePools[locale]);
-  if (!locales.length)
-    return { character: missing(), mother: missing(), father: missing(), sister: missing() };
+  let locales = localesFor(country, settlement).filter((locale) => namePools[locale]);
+  let selection: NonNullable<PersonalName['selection']> = 'regional-or-country';
+  if (!locales.length) locales=country.nameLocales.filter(locale=>namePools[locale]);
+  if (!locales.length) {
+    const languages =
+      (lifeProfiles.countries as Record<string, { languages: string[] }>)[country.code]
+        ?.languages ?? [];
+    for (const language of languages) {
+      locales = Object.keys(namePools).filter((locale) => namePools[locale].language === language);
+      if (locales.length) break;
+    }
+    selection = 'language-group';
+  }
+  if (!locales.length) {
+    locales = ['en'];
+    selection = 'reserve';
+  }
+
   const fatherLocale = pick(locales, random),
     motherLocale = pick(locales, random);
   const fatherPool = namePools[fatherLocale],
@@ -153,7 +158,7 @@ export function generateFamilyNames(
     : portuguese
       ? [motherSurname, fatherSurname]
       : undefined;
-  return {
+  const family = {
     character: person(
       childLocale,
       gender,
@@ -166,6 +171,9 @@ export function generateFamilyNames(
     father: person(fatherLocale, 'Мальчик', fatherSurname, random, fatherGiven),
     sister: person(childLocale, 'Девочка', girlSurname, random, undefined, surnameParts),
   };
+  for (const member of Object.values(family))
+    (member.personalName as PersonalName).selection = selection;
+  return family;
 }
 
 // Legacy display strings are authoritative. No regeneration, guessed declension

@@ -153,6 +153,7 @@ test('Creative and community paths retain distinct delayed outcomes and source a
         description: 'Практика',
       },
     ];
+    if(path==='creative-path')s.development={project:{title:'Проверяемый рисунок',direction:'art',progress:100,status:'ready',startedMonth:monthIndex(life.currentDate)-40,sourceEventId:'activity'}};
     const e = emit(life);
     assert.equal(e.templateId, path);
     assert.deepEqual(e.cause?.sourceEventIds, ['activity']);

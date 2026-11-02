@@ -1,14 +1,27 @@
+import { transact, type FinanceState } from './finance';
+import type { Development } from './life-development';
+import type { SchoolState } from './education';
 import incomeData from '../../data/income-groups.json';
-import type { Life, Stats, EventParticipant } from './domain';
+import type { Life, Stats, EventParticipant, Gender } from './domain';
 import { worldCountries } from './world';
-import { generateFamilyNames } from './names';
+import { generateFamilyNames, type PersonalName } from './names';
 
 export type NpcRole =
-  'parent' | 'sibling' | 'friend' | 'neighbor' | 'colleague' | 'partner' | 'child';
+  | 'parent'
+  | 'sibling'
+  | 'friend'
+  | 'neighbor'
+  | 'colleague'
+  | 'partner'
+  | 'child'
+  | 'teacher'
+  | 'classmate';
 export type Memory = { id: string; date: string; eventId: string; summary: string };
 export type Npc = {
   id: string;
   name: string;
+  gender?: Gender;
+  personalName?: PersonalName;
   role: NpcRole;
   roles?: NpcRole[];
   bornMonth: number;
@@ -18,7 +31,14 @@ export type Npc = {
   memory: Memory[];
 };
 export type Relationship = { npcId: string; bond: number; trust: number; lastContactMonth: number };
-export type Job = { status: 'unemployed' | 'employed' | 'retired'; title: string; income: number };
+export type Job = {
+  employer?: string;
+  schedule?: string;
+  qualification?: string;
+  status: 'unemployed' | 'employed' | 'retired';
+  title: string;
+  income: number;
+};
 export type Effect = {
   reputation?: number;
   habits?: Record<string, number>;
@@ -58,6 +78,9 @@ export type CausalPlan = {
   };
 };
 export type SimulationState = {
+  finance?: FinanceState;
+  development?: Development;
+  school?: SchoolState;
   version: 1;
   world: {
     countryCode: string;
@@ -143,6 +166,11 @@ export function ensureSimulation(life: Life): SimulationState {
     state.npcs[person.id] = {
       id: person.id,
       name: person.name,
+      gender:
+        person.relationship === 'Мама' || person.relationship.includes('сестра')
+          ? 'Девочка'
+          : 'Мальчик',
+      ...(person.personalName ? { personalName: person.personalName } : {}),
       role: person.relationship.includes('сестра') ? 'sibling' : 'parent',
       age,
       bornMonth: state.lastMonth - age * 12,
@@ -161,30 +189,47 @@ export function ensureSimulation(life: Life): SimulationState {
 }
 export function addNpc(
   life: Life,
-  role: 'friend' | 'neighbor' | 'colleague',
+  role: 'friend' | 'neighbor' | 'colleague' | 'teacher' | 'classmate',
   random: () => number,
 ): Npc {
   const state = ensureSimulation(life);
   const country = worldCountries.find((c) => c.code === state.world.countryCode);
-  const name = country
-    ? generateFamilyNames(
-        country,
-        random() < 0.5 ? 'Девочка' : 'Мальчик',
-        random,
-        country.settlements.find(
-          (place) => place.geonameId === life.location.birthplace?.settlementId,
-        ),
-      ).character.name
-    : 'Имя не указано';
+  const gender: Gender = random() < 0.5 ? 'Девочка' : 'Мальчик';
+  const named = generateFamilyNames(
+    country ?? {
+      code: '',
+      name: life.location.country,
+      unMember: false,
+      population: 0,
+      nameLocales: [],
+      settlements: [],
+    },
+    gender,
+    random,
+    country?.settlements.find(
+      (place) => place.geonameId === life.location.birthplace?.settlementId,
+    ),
+  ).character;
   const id = `npc-${life.id}-${++state.sequence}`,
-    age = life.age + (role === 'neighbor' ? 20 : role === 'colleague' ? 3 : 0);
+    age =
+      life.age +
+      (role === 'neighbor' ? 20 : role === 'colleague' ? 3 : role === 'teacher' ? 25 : 0);
   const npc: Npc = {
     id,
-    name,
+    ...named,
+    gender,
     role,
     age,
     bornMonth: monthIndex(life.currentDate) - age * 12,
-    traits: [random() < 0.5 ? 'общительный' : 'осторожный'],
+    traits: [
+      random() < 0.5
+        ? gender === 'Девочка'
+          ? 'общительная'
+          : 'общительный'
+        : gender === 'Девочка'
+          ? 'осторожная'
+          : 'осторожный',
+    ],
     stats: { health: 80, happiness: 60 },
     memory: [],
   };
@@ -206,6 +251,8 @@ export function npcParticipant(npc: Npc): EventParticipant {
     colleague: 'Коллега',
     partner: 'Партнёр',
     child: 'Ребёнок',
+    teacher: 'Учитель',
+    classmate: 'Одноклассник',
   };
   return {
     kind: 'person',
@@ -235,7 +282,7 @@ export function applyEffects(
       life.stats[key as keyof Stats] = clamp(life.stats[key as keyof Stats] + value);
     for (const key of ['cash', 'savings', 'debt'] as const)
       if (effect[key] !== undefined)
-        person.money[key] = Math.max(0, Math.round((person.money[key] + effect[key]!) * 100) / 100);
+        transact(life, state, key, effect[key]!, summary, 'decision', sourceEventId);
     for (const [key, value] of Object.entries(effect.skills ?? {}))
       person.skills[key as keyof typeof person.skills] = clamp(
         person.skills[key as keyof typeof person.skills] + value,

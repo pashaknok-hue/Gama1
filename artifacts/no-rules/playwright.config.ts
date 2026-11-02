@@ -10,6 +10,7 @@ export default defineConfig({
     launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH },
   },
   projects: [
+    {name:'Desktop-Chromium',testMatch:['**/systems.spec.ts','**/prototype.spec.ts'],use:{...devices['Desktop Chrome']}},
     { name: 'iPhone-Chromium', use: { ...devices['iPhone 13'], defaultBrowserType: 'chromium' } },
   ],
   webServer: process.env.NO_RULES_TEST_URL

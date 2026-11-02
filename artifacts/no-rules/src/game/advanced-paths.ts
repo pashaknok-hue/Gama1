@@ -134,7 +134,7 @@ export function advancedPaths(life: Life): PathRule[] {
         ...base(
           'romantic-boundary',
           'Обсудить изменившиеся чувства?',
-          `${isolateName(friend.name)} и персонаж замечают, что их общение стало особенно близким. Можно открыто поговорить, сохранив право каждого на собственный ответ.`,
+          `${isolateName(friend.name)} и ${isolateName(life.character.name)} замечают, что их общение стало особенно близким. Можно открыто поговорить, сохранив право каждого на собственный ответ.`,
           ['Длительное знакомство, близость и взаимное доверие.'],
         ),
         actor: npcParticipant(friend),

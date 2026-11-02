@@ -38,7 +38,8 @@
         "status": "sourced",
         "russianSpelling": "unavailable",
         "transcriptionSources": [],
-        "displayName": "Добромисла Кулинич"
+        "displayName": "Добромисла Кулинич",
+        "selection": "regional-or-country"
       },
       "relationship": "Мама",
       "age": 30,
@@ -59,7 +60,8 @@
         "status": "sourced",
         "russianSpelling": "unavailable",
         "transcriptionSources": [],
-        "displayName": "Добромир Кулинич"
+        "displayName": "Добромир Кулинич",
+        "selection": "regional-or-country"
       },
       "relationship": "Папа",
       "age": 30,

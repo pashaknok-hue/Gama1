@@ -1,0 +1,865 @@
+{
+  "version": 1,
+  "name": "no-rules-observer",
+  "width": 24,
+  "height": 32,
+  "palette": {
+    "ink": "#233545",
+    "skin": "#d1a17d",
+    "hair": "#34313b",
+    "coat": "#cb6249",
+    "stripe": "#e8cd83",
+    "pants": "#4b6b70",
+    "shoe": "#25343b",
+    "eye": "#1d2930",
+    "chair": "#ab8260",
+    "blanket": "#809b83"
+  },
+  "frames": [
+    {
+      "name": "idle-0",
+      "duration": 400,
+      "ops": [
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 7,
+          "w": 7,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 6,
+          "w": 8,
+          "h": 3,
+          "color": "hair"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 10,
+          "w": 1,
+          "h": 1,
+          "color": "eye"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 14,
+          "w": 9,
+          "h": 8,
+          "color": "coat"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 17,
+          "w": 9,
+          "h": 2,
+          "color": "stripe"
+        },
+        {
+          "op": "rect",
+          "x": 6,
+          "y": 15,
+          "w": 2,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 22,
+          "w": 3,
+          "h": 7,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 22,
+          "w": 3,
+          "h": 7,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 29,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 29,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        }
+      ]
+    },
+    {
+      "name": "idle-1",
+      "duration": 400,
+      "ops": [
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 7,
+          "w": 7,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 6,
+          "w": 8,
+          "h": 3,
+          "color": "hair"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 10,
+          "w": 1,
+          "h": 1,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 14,
+          "w": 9,
+          "h": 8,
+          "color": "coat"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 17,
+          "w": 9,
+          "h": 2,
+          "color": "stripe"
+        },
+        {
+          "op": "rect",
+          "x": 6,
+          "y": 15,
+          "w": 2,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 22,
+          "w": 3,
+          "h": 7,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 22,
+          "w": 3,
+          "h": 7,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 29,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 29,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        }
+      ]
+    },
+    {
+      "name": "walk-0",
+      "duration": 140,
+      "ops": [
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 7,
+          "w": 7,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 6,
+          "w": 8,
+          "h": 3,
+          "color": "hair"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 10,
+          "w": 1,
+          "h": 1,
+          "color": "eye"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 14,
+          "w": 9,
+          "h": 8,
+          "color": "coat"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 17,
+          "w": 9,
+          "h": 2,
+          "color": "stripe"
+        },
+        {
+          "op": "rect",
+          "x": 6,
+          "y": 15,
+          "w": 2,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 22,
+          "w": 3,
+          "h": 7,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 22,
+          "w": 3,
+          "h": 7,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 29,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 29,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        }
+      ]
+    },
+    {
+      "name": "walk-1",
+      "duration": 140,
+      "ops": [
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 7,
+          "w": 7,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 6,
+          "w": 8,
+          "h": 3,
+          "color": "hair"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 10,
+          "w": 1,
+          "h": 1,
+          "color": "eye"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 14,
+          "w": 9,
+          "h": 8,
+          "color": "coat"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 17,
+          "w": 9,
+          "h": 2,
+          "color": "stripe"
+        },
+        {
+          "op": "rect",
+          "x": 6,
+          "y": 15,
+          "w": 2,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 22,
+          "w": 3,
+          "h": 5,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 22,
+          "w": 3,
+          "h": 7,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 27,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 29,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        }
+      ]
+    },
+    {
+      "name": "walk-2",
+      "duration": 140,
+      "ops": [
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 7,
+          "w": 7,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 6,
+          "w": 8,
+          "h": 3,
+          "color": "hair"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 10,
+          "w": 1,
+          "h": 1,
+          "color": "eye"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 14,
+          "w": 9,
+          "h": 8,
+          "color": "coat"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 17,
+          "w": 9,
+          "h": 2,
+          "color": "stripe"
+        },
+        {
+          "op": "rect",
+          "x": 6,
+          "y": 15,
+          "w": 2,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 22,
+          "w": 3,
+          "h": 7,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 22,
+          "w": 3,
+          "h": 7,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 29,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 29,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        }
+      ]
+    },
+    {
+      "name": "walk-3",
+      "duration": 140,
+      "ops": [
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 7,
+          "w": 7,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 6,
+          "w": 8,
+          "h": 3,
+          "color": "hair"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 10,
+          "w": 1,
+          "h": 1,
+          "color": "eye"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 14,
+          "w": 9,
+          "h": 8,
+          "color": "coat"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 17,
+          "w": 9,
+          "h": 2,
+          "color": "stripe"
+        },
+        {
+          "op": "rect",
+          "x": 6,
+          "y": 15,
+          "w": 2,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 22,
+          "w": 3,
+          "h": 7,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 22,
+          "w": 3,
+          "h": 5,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 29,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 27,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        }
+      ]
+    },
+    {
+      "name": "sit-0",
+      "duration": 400,
+      "ops": [
+        {
+          "op": "rect",
+          "x": 7,
+          "y": 21,
+          "w": 12,
+          "h": 2,
+          "color": "chair"
+        },
+        {
+          "op": "rect",
+          "x": 7,
+          "y": 22,
+          "w": 2,
+          "h": 8,
+          "color": "chair"
+        },
+        {
+          "op": "rect",
+          "x": 17,
+          "y": 22,
+          "w": 2,
+          "h": 8,
+          "color": "chair"
+        },
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 11,
+          "w": 7,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 10,
+          "w": 8,
+          "h": 3,
+          "color": "hair"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 14,
+          "w": 1,
+          "h": 1,
+          "color": "eye"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 18,
+          "w": 9,
+          "h": 5,
+          "color": "coat"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 21,
+          "w": 9,
+          "h": 2,
+          "color": "stripe"
+        },
+        {
+          "op": "rect",
+          "x": 6,
+          "y": 19,
+          "w": 2,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 10,
+          "y": 23,
+          "w": 9,
+          "h": 3,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 17,
+          "y": 25,
+          "w": 2,
+          "h": 4,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 16,
+          "y": 29,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        }
+      ]
+    },
+    {
+      "name": "sit-1",
+      "duration": 400,
+      "ops": [
+        {
+          "op": "rect",
+          "x": 7,
+          "y": 21,
+          "w": 12,
+          "h": 2,
+          "color": "chair"
+        },
+        {
+          "op": "rect",
+          "x": 7,
+          "y": 22,
+          "w": 2,
+          "h": 8,
+          "color": "chair"
+        },
+        {
+          "op": "rect",
+          "x": 17,
+          "y": 22,
+          "w": 2,
+          "h": 8,
+          "color": "chair"
+        },
+        {
+          "op": "rect",
+          "x": 9,
+          "y": 11,
+          "w": 7,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 10,
+          "w": 8,
+          "h": 3,
+          "color": "hair"
+        },
+        {
+          "op": "rect",
+          "x": 14,
+          "y": 14,
+          "w": 1,
+          "h": 1,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 18,
+          "w": 9,
+          "h": 5,
+          "color": "coat"
+        },
+        {
+          "op": "rect",
+          "x": 8,
+          "y": 21,
+          "w": 9,
+          "h": 2,
+          "color": "stripe"
+        },
+        {
+          "op": "rect",
+          "x": 6,
+          "y": 19,
+          "w": 2,
+          "h": 7,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 10,
+          "y": 23,
+          "w": 9,
+          "h": 3,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 17,
+          "y": 25,
+          "w": 2,
+          "h": 4,
+          "color": "pants"
+        },
+        {
+          "op": "rect",
+          "x": 16,
+          "y": 29,
+          "w": 4,
+          "h": 1,
+          "color": "shoe"
+        }
+      ]
+    },
+    {
+      "name": "sleep-0",
+      "duration": 700,
+      "ops": [
+        {
+          "op": "rect",
+          "x": 3,
+          "y": 29,
+          "w": 19,
+          "h": 1,
+          "color": "chair"
+        },
+        {
+          "op": "rect",
+          "x": 16,
+          "y": 23,
+          "w": 6,
+          "h": 6,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 16,
+          "y": 22,
+          "w": 6,
+          "h": 2,
+          "color": "hair"
+        },
+        {
+          "op": "rect",
+          "x": 5,
+          "y": 25,
+          "w": 12,
+          "h": 4,
+          "color": "blanket"
+        },
+        {
+          "op": "rect",
+          "x": 18,
+          "y": 25,
+          "w": 2,
+          "h": 1,
+          "color": "skin"
+        }
+      ]
+    },
+    {
+      "name": "sleep-1",
+      "duration": 700,
+      "ops": [
+        {
+          "op": "rect",
+          "x": 3,
+          "y": 29,
+          "w": 19,
+          "h": 1,
+          "color": "chair"
+        },
+        {
+          "op": "rect",
+          "x": 16,
+          "y": 23,
+          "w": 6,
+          "h": 6,
+          "color": "skin"
+        },
+        {
+          "op": "rect",
+          "x": 16,
+          "y": 22,
+          "w": 6,
+          "h": 2,
+          "color": "hair"
+        },
+        {
+          "op": "rect",
+          "x": 5,
+          "y": 25,
+          "w": 12,
+          "h": 4,
+          "color": "blanket"
+        },
+        {
+          "op": "rect",
+          "x": 18,
+          "y": 25,
+          "w": 2,
+          "h": 1,
+          "color": "eye"
+        }
+      ]
+    }
+  ],
+  "animations": {
+    "idle": {
+      "frames": [
+        "idle-0",
+        "idle-1"
+      ]
+    },
+    "walk": {
+      "frames": [
+        "walk-0",
+        "walk-1",
+        "walk-2",
+        "walk-3"
+      ]
+    },
+    "sit": {
+      "frames": [
+        "sit-0",
+        "sit-1"
+      ]
+    },
+    "sleep": {
+      "frames": [
+        "sleep-0",
+        "sleep-1"
+      ]
+    }
+  },
+  "sheet": {
+    "columns": 4,
+    "padding": 0,
+    "scale": 1
+  }
+}

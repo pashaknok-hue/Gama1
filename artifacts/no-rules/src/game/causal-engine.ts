@@ -1,3 +1,6 @@
+import { monthlyBudget } from './finance';
+import { schoolMonth, schoolRules } from './education';
+import { developmentMonth, careerRules } from './life-development';
 import { childhoodDecisions } from './childhood-decisions';
 import { eventCategory } from './event-category';
 import { lifePathRules } from './life-paths';
@@ -118,19 +121,8 @@ export function runCoreMonth(life: Life, random: () => number): CoreDraft[] {
     if (relation && now - relation.lastContactMonth > 3)
       relation.bond = clamp(relation.bond - 0.25, -100, 100);
   }
-  if (life.age >= 6 && person.education === 'none') {
-    person.education = 'school';
-    events.push(
-      event(
-        life,
-        'school-start',
-        'Новый распорядок обучения',
-        `${characterSubject(life.character)} начинает регулярно заниматься при поддержке семьи.`,
-        protagonist(life),
-        ['Возраст не менее шести лет.', 'Ранее регулярного обучения не было.'],
-      ),
-    );
-  }
+  events.push(...schoolMonth(life, random));
+
   if (life.age >= 3 && !Object.values(state.npcs).some((npc) => npc.role === 'friend')) {
     const npc = addNpc(life, 'friend', random);
     events.push(
@@ -138,7 +130,7 @@ export function runCoreMonth(life: Life, random: () => number): CoreDraft[] {
         life,
         'new-friend',
         'Новое знакомство',
-        `${isolateName(npcParticipant(npc).name)} знакомится с персонажем во время общего занятия. Общение может продолжиться.`,
+        `${isolateName(npcParticipant(npc).name)} знакомится с ${isolateName(life.character.name)} во время общей игры. Вместе удаётся придумать правила.`,
         npcParticipant(npc),
         ['Начались совместные занятия со сверстниками.'],
       ),
@@ -189,33 +181,7 @@ export function runCoreMonth(life: Life, random: () => number): CoreDraft[] {
   }
   if (life.age >= 65 && life.currentDate.slice(5, 7) === life.birthDate.slice(5, 7))
     life.stats.health = clamp(life.stats.health - 1);
-  if (life.age >= 6 && life.age < 18)
-    person.skills.learning = clamp(person.skills.learning + 0.015);
-  if (life.age >= 12 && life.age < 18)
-    person.money.cash =
-      Math.round(
-        (person.money.cash +
-          state.world.wage *
-            0.03 *
-            (life.conditions.className === 'Рабочая семья'
-              ? 0.5
-              : life.conditions.className === 'Уверенный достаток'
-                ? 1.7
-                : 1)) *
-          100,
-      ) / 100;
-  if (life.age >= 18) {
-    const income = person.job.income,
-      expenses = person.money.expenses;
-    person.money.lastIncome = income;
-    person.money.lastExpenses = expenses;
-    person.money.cash = Math.round((person.money.cash + income - expenses) * 100) / 100;
-    if (person.money.cash < 0) {
-      person.money.debt += -person.money.cash;
-      person.money.cash = 0;
-    }
-    person.money.debt = Math.round(person.money.debt * 100) / 100;
-  }
+  monthlyBudget(life, state);
   if (person.job.status === 'employed') {
     person.skills.craft = clamp(person.skills.craft + 0.02);
     const colleague = Object.values(state.npcs).find((npc) => hasRole(npc, 'colleague'));
@@ -232,8 +198,8 @@ export function runCoreMonth(life: Life, random: () => number): CoreDraft[] {
         event(
           life,
           'career-review',
-          'Опыт изменил рабочую роль',
-          'Накопленный опыт и доверие коллег позволили пересмотреть рабочую роль и доход.',
+          'Пересмотр дохода за накопленный опыт',
+          'Накопленный опыт и доверие коллег позволили пересмотреть доход.',
           npcParticipant(colleague),
           [
             'Не менее двух лет с прошлого пересмотра.',
@@ -281,6 +247,7 @@ export function runCoreMonth(life: Life, random: () => number): CoreDraft[] {
     if (valid) automatic(life, draft, queued.effects);
     events.push(draft);
   }
+  events.push(...developmentMonth(life));
   if (
     life.age < 13 &&
     life.stats.health < 55 &&
@@ -308,6 +275,8 @@ export function runCoreMonth(life: Life, random: () => number): CoreDraft[] {
   }
   if (
     life.age >= 8 &&
+    state.school?.status === 'enrolled' &&
+    !!state.school.teacherId &&
     conditionsMatch(life, [
       { type: 'trait', pattern: 'любознатель' },
       { type: 'education', value: 'school' },
@@ -321,8 +290,8 @@ export function runCoreMonth(life: Life, random: () => number): CoreDraft[] {
           life,
           'interest-noticed',
           'Интерес замечен',
-          'Наставник замечает любознательность персонажа и предлагает дополнительные материалы.',
-          { kind: 'person', name: 'Наставник' },
+          `Учитель ${isolateName(state.npcs[state.school!.teacherId!].name)} замечает интерес к занятиям и предлагает дополнительные материалы. ${isolateName(life.character.name)} получает возможность углубиться в тему.`,
+          npcParticipant(state.npcs[state.school!.teacherId!]),
           ['Есть регулярные занятия.', 'В характере выражена любознательность.'],
         ),
         [{ skills: { learning: 1 }, flags: { 'interest-noticed': true } }],
@@ -334,11 +303,12 @@ export function runCoreMonth(life: Life, random: () => number): CoreDraft[] {
       life.age >= 6 &&
       npc.age >= 6 &&
       npc.role !== 'parent' &&
+      npc.memory.length > 0 &&
       npc.age < 90 &&
       npc.stats.happiness < 65 &&
       state.relationships[npc.id].bond >= 10 &&
       now - state.relationships[npc.id].lastContactMonth >=
-        (npc.traits.includes('общительный') ? 4 : 8),
+        (npc.traits.some((trait) => trait.startsWith('общительн')) ? 12 : 18),
   );
   if (npc) {
     const memories = npc.memory.slice(-1).map((memory) => memory.eventId);
@@ -349,11 +319,11 @@ export function runCoreMonth(life: Life, random: () => number): CoreDraft[] {
           life,
           `npc-contact-${npc.id}`,
           'Весточка от знакомого',
-          `${isolateName(npcParticipant(npc).name)} самостоятельно выходит на связь. Короткий разговор поддерживает обоих.`,
+          `${isolateName(npcParticipant(npc).name)} предлагает обсудить ${state.development?.project ? `проект «${state.development.project.title}»` : state.school?.status === 'enrolled' ? `учёбу: «${state.school.name}»` : person.job.employer ? `новости работы: «${person.job.employer}»` : 'последнюю общую встречу и планы на выходные'}. Обмен впечатлениями помогает восстановить доверие после долгого перерыва.`,
           npcParticipant(npc),
           [
             'Некоторое время не было общения.',
-            'NPC нуждается в контакте и помнит прошлые встречи.',
+            'Сохранилась общая история; знакомый предлагает обсудить её снова.',
           ],
           memories,
         ),
@@ -389,117 +359,13 @@ export function coreDecision(life: Life): CoreDraft | null {
     hero = protagonist(life);
   const friend = Object.values(state.npcs).find((npc) => npc.role === 'friend');
   const relation = friend ? state.relationships[friend.id] : null;
-  const rules: Rule[] = [...childhoodDecisions(life), ...lifePathRules(life)];
+  const rules: Rule[] = [
+    ...childhoodDecisions(life),
+    ...lifePathRules(life),
+    ...schoolRules(life),
+    ...careerRules(life),
+  ];
   const add = (rule: Rule) => rules.push(rule);
-  add({
-    id: 'training-path',
-    priority: 40,
-    minAge: 16,
-    maxAge: 50,
-    cooldown: 24,
-    conditions: [
-      { type: 'flag', key: 'training-planned', value: false },
-      { type: 'job', value: 'unemployed' },
-    ],
-    build: () => {
-      const draft = event(
-        life,
-        'training-path',
-        'Куда направить обучение?',
-        'Доступен двухлетний путь обучения. Выбор повлияет на навыки и будущие предложения работы.',
-        hero,
-        ['Возраст позволяет осознанно выбрать обучение.', 'Дальнейший путь ещё не выбран.'],
-      );
-      const delay = (education: 'school' | 'vocational', skill: number) => ({
-        afterMonths: 24,
-        title: 'Обучение дало результат',
-        description: `${characterSubject(life.character)} завершает выбранный двухлетний путь и получает новые навыки.`,
-        actor: hero,
-        target: hero,
-        effects: [
-          {
-            skills: { learning: skill },
-            education,
-            flags: { qualified: education === 'vocational' },
-          },
-        ],
-        requires: { flag: 'training-planned' },
-      });
-      draft.choices = [
-        choice(
-          'Пойти на курс — 40 усл. ед.',
-          'Началось обучение на курсе.',
-          plan([{ cash: -40, flags: { 'training-planned': true } }], delay('vocational', 4)),
-        ),
-        choice(
-          'Учиться самостоятельно',
-          'Выбран самостоятельный путь обучения.',
-          plan([{ flags: { 'training-planned': true } }], delay('school', 2)),
-        ),
-        choice('Пока отложить', 'Решение об обучении отложено.', plan([{ stats: { energy: 3 } }])),
-      ];
-      return draft;
-    },
-  });
-  add({
-    id: 'job-offer',
-    priority: 30,
-    minAge: 18,
-    maxAge: 64,
-    cooldown: 6,
-    conditions: [
-      { type: 'job', value: 'unemployed' },
-      { type: 'skill', key: 'learning', min: 2 },
-    ],
-    build: () => {
-      const qualified = person.education === 'vocational',
-        income = Math.round(
-          state.world.wage *
-            (1 + Math.min(person.skills.learning, 10) * 0.05 + (qualified ? 0.3 : 0)),
-        );
-      const draft = event(
-        life,
-        'job-offer',
-        'Предложение работы',
-        `Навыки позволяют претендовать на работу. Доход в модели: ${income} усл. ед. за месяц.`,
-        { kind: 'world', name: 'Местная организация' },
-        [
-          'Нет действующей работы.',
-          `Навык обучения: ${person.skills.learning.toFixed(1)}.`,
-          `Образование: ${qualified ? 'профессиональное обучение' : 'регулярные занятия'}.`,
-        ],
-        life.events
-          .filter((e) =>
-            e.appliedConsequences?.some(
-              (effect) => (effect.skills?.learning ?? 0) > 0 || effect.education,
-            ),
-          )
-          .slice(0, 1)
-          .map((e) => e.id),
-      );
-      draft.choices = [
-        choice(
-          'Принять предложение',
-          'Работа началась.',
-          plan([
-            {
-              job: {
-                status: 'employed',
-                title: qualified ? 'Специалист службы поддержки' : 'Помощник в мастерской',
-                income,
-              },
-            },
-          ]),
-        ),
-        choice(
-          'Продолжить поиск',
-          'Поиск работы продолжается без гарантии дохода.',
-          plan([{ stats: { energy: -2 } }]),
-        ),
-      ];
-      return draft;
-    },
-  });
   add({
     id: 'health-plan',
     priority: 90,
@@ -574,7 +440,7 @@ export function coreDecision(life: Life): CoreDraft | null {
               {
                 afterMonths: 36,
                 title: 'Поддержка вернулась',
-                description: `${isolateName(npcParticipant(friend).name)} вспоминает прежний разговор и поддерживает персонажа в ответ.`,
+                description: `${isolateName(npcParticipant(friend).name)} вспоминает прежний разговор и поддерживает в ответ.`,
                 actor: npcParticipant(friend),
                 target: hero,
                 effects: [
@@ -787,6 +653,7 @@ export function coreDecision(life: Life): CoreDraft | null {
   if (!rule) return null;
   // Important decisions are deterministic consequences of conditions, not a lottery.
   const draft = rule.build();
+  draft.id ??= `core-${life.id}-${rule.id}-${now}`;
   draft.kind = 'decision';
   draft.eligibility = { minAge: rule.minAge, maxAge: rule.maxAge };
   state.fired[rule.id] = now;
@@ -815,6 +682,11 @@ export function commitPlan(life: Life, event: LifeEvent, index: number): boolean
   return true;
 }
 export function observeEvent(life: Life, event: LifeEvent) {
+  const source = event.cause?.sourceEventIds
+    .map((id) => life.events.find((e) => e.id === id))
+    .find((e) => e?.templateId === 'creative-path');
+  if (source && event.consequenceStatus === 'applied' && life.simulation?.development?.project)
+    life.simulation.development.project.status = 'shown';
   const state = ensureSimulation(life);
   if (event.actor?.id && state.npcs[event.actor.id]) {
     remember(life, event.actor.id, event.id, event.outcome ?? event.description);

@@ -189,6 +189,7 @@ function NewLifeScreen({
           </section>
         </div>
 
+        {profile.character.personalName?.selection && profile.character.personalName.selection !== 'regional-or-country' && <p className="nr-name-coverage" role="status">Имя выбрано из {profile.character.personalName.selection==='language-group'?'родственного языкового':'резервного'} набора ({profile.character.personalName.language}); местное происхождение не подтверждено.</p>}
         <footer className="nr-setup-footer">
           <span>Случайное рождение. Настоящие последствия. Только твой выбор.</span>
           <span><BookOpen size={14} /> История хранится на этом устройстве.</span>
@@ -208,6 +209,7 @@ export default function App() {
   const [toast, setToast] = useState('');
   const [hasSave, setHasSave] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [skipMode, setSkipMode] = useState(false);
   const [speed, setSpeed] = useState<TimeSpeed>(1);
 
   const pendingDecision = getPendingDecision(life);
@@ -224,12 +226,8 @@ export default function App() {
   }, [toast]);
 
   useEffect(() => {
-    if (life) setHasSave(saveLife(life));
-  }, [life]);
-
-  useEffect(() => {
-    if (pendingDecision) setPlaying(false);
-  }, [pendingDecision?.id]);
+    if (life) setHasSave(saveLife({...life, playback:{mode:skipMode?'choices':playing?'auto':'paused'}}));
+  }, [life, playing, skipMode]);
 
   useGameClock({
     lifeId: life?.id,
@@ -246,6 +244,7 @@ export default function App() {
 
   const startLife = () => {
     setSpeed(1);
+    setSkipMode(false);
     setPlaying(true);
     setLife(makeLife(profile));
     setToast('История началась. Автосохранение включено.');
@@ -268,6 +267,7 @@ export default function App() {
     if (!life || pendingDecision) return;
     const next = structuredClone(life);
     const months = advanceToNextDecision(next);
+    setSkipMode(true);
     setLife(next);
     setPlaying(false);
     if (!getPendingDecision(next)) setToast(`За ${months} месяцев новых решений не возникло. Время остановлено.`);
@@ -276,14 +276,19 @@ export default function App() {
   const choose = (eventId: string, choiceIndex: number) => {
     if (!life) return;
     const next = structuredClone(life);
-    setLife(resolveChoice(next, eventId, choiceIndex));
-    setPlaying(false);
+    const event=next.events.find(event=>event.id===eventId);
+    if(!event || event.outcome)return;
+    resolveChoice(next,eventId,choiceIndex);
+    if(!event.outcome)return;
+    if(skipMode)advanceToNextDecision(next);
+    setLife(next);
   };
 
   const resume = () => {
     const savedLife = loadLife();
     if (savedLife) {
-      setPlaying(!getPendingDecision(savedLife));
+      setSkipMode(savedLife.playback?.mode==='choices');
+      setPlaying((savedLife.playback?.mode??'auto')==='auto');
       setLife(savedLife);
       setToast('Сохранённая история открыта.');
     } else {
@@ -303,6 +308,7 @@ export default function App() {
     clearLife();
     setHasSave(false);
     setPlaying(false);
+    setSkipMode(false);
     setLife(null);
     setProfile(generateBirthProfile(birthDistribution));
     setShowRestart(false);
@@ -377,7 +383,7 @@ export default function App() {
           playing={playing}
           speed={speed}
           locked={Boolean(pendingDecision)}
-          onToggle={() => setPlaying((value) => !value)}
+          onToggle={() => {setSkipMode(false);setPlaying((value) => !value);}}
           onSpeedChange={cycleSpeed}
           onOpenActions={() => setShowActions(true)}
           actionsAvailable={actions.length > 0}
@@ -386,11 +392,11 @@ export default function App() {
         />
 
         <div className="nr-content-grid">
-          <LifeJournal events={life.events} />
+          <LifeJournal events={life.events} life={life} />
         </div>
       </div>
 
-      <DecisionModal life={life} event={pendingDecision} onChoose={choose} />
+      <DecisionModal life={life} event={pendingDecision} onChoose={choose} skipMode={skipMode} onSkipMode={setSkipMode} />
       {showActions && (
         <ActionsModal
           life={life}
