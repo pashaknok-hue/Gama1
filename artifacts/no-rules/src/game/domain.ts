@@ -1,3 +1,4 @@
+import type { RandomState } from './random';
 import type { SimulationState, CausalPlan, Effect } from './causal-state';
 import type { PersonalName } from './names';
 import type { Birthplace } from './world';
@@ -15,7 +16,9 @@ export type EventParticipant = {
   name: string;
   id?: string;
 };
+export type EventCategory = 'family' | 'education' | 'relationships' | 'career' | 'finance' | 'health' | 'creativity' | 'crime' | 'everyday';
 export type LifeEvent = {
+  category?: EventCategory;
   id: string; date: string; age: number; title: string; description: string;
   kind?: 'life' | 'action' | 'decision' | 'milestone';
   templateId?: string;
@@ -31,6 +34,7 @@ export type LifeEvent = {
   choices?: { plan?: CausalPlan; label: string; result: string; effects: Partial<Stats> }[]; outcome?: string;
 };
 export type Life = {
+  rng?: RandomState;
   id: string; character: Character; birthDate: string; location: { country: string; region: string; birthplace?: Birthplace };
   family: FamilyMember[]; conditions: { className: string; home: string; resources: string[] };
   simulation?: SimulationState;

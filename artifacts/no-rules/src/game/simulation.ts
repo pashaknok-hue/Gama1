@@ -1,3 +1,5 @@
+import { randomState, nextRandom } from './random';
+import { eventCategory } from './event-category';
 import { birthDescription, birthdayDescription, characterSubject } from './event-text';
 import { nextLifeMonth } from './calendar';
 import { dateAge } from './generation';
@@ -17,12 +19,16 @@ let idSequence = 0;
 const randomId = () =>
   globalThis.crypto?.randomUUID?.() ??
   `${Date.now().toString(36)}-${++idSequence}-${Math.random().toString(36).slice(2, 10)}`;
-export function makeLife(profile: BirthProfile): Life {
-  const month = 1 + Math.floor(Math.random() * 12),
-    day = 1 + Math.floor(Math.random() * 28);
-  const birthDate = `200${Math.floor(Math.random() * 9)}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  const id = randomId(),
-    now = new Date().toISOString();
+export function makeLife(
+  profile: BirthProfile,
+  options: { random?: () => number; id?: string; now?: string } = {},
+): Life {
+  const random = options.random ?? Math.random;
+  const month = 1 + Math.floor(random() * 12),
+    day = 1 + Math.floor(random() * 28);
+  const birthDate = `200${Math.floor(random() * 9)}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const id = options.id ?? randomId(),
+    now = options.now ?? new Date().toISOString();
   const birth: LifeEvent = {
     id: randomId(),
     date: birthDate,
@@ -161,7 +167,8 @@ function record(life: Life, draft: CoreDraft) {
   if (change) effects(life, change);
   const recorded: LifeEvent = {
     ...event,
-    id: draft.id ?? randomId(),
+    id: draft.id ?? (life.rng ? `entry-${life.id}-${++life.rng.sequence}` : randomId()),
+    category: draft.category ?? eventCategory(draft.templateId),
     date: life.currentDate,
     age: life.age,
     cause: draft.cause ?? {
@@ -230,12 +237,21 @@ function actionEvent(life: Life, id: ActionId): EventDraft {
     effects: action.effects,
   };
 }
-function progress(life: Life, months: number, random: () => number, actionId?: ActionId): Life {
+function progress(
+  life: Life,
+  months: number,
+  random: (() => number) | undefined,
+  actionId?: ActionId,
+): Life {
   if (!Number.isInteger(months) || months < 1 || months > 1200 || pendingDecision(life))
     return life;
   if (actionId && !availableActions(life.age, life.stats).some((action) => action.id === actionId))
     return life;
   ensureSimulation(life);
+  if (!random) {
+    life.rng ??= randomState(Math.floor(Math.random() * 4294967296));
+    random = () => nextRandom(life.rng!);
+  }
   for (let month = 0; month < months; month++) {
     if (pendingDecision(life)) break;
     if (
@@ -262,6 +278,13 @@ function progress(life: Life, months: number, random: () => number, actionId?: A
     effects(life, { energy: -1, happiness: -1 });
     if (actionId && availableActions(life.age).some((action) => action.id === actionId)) {
       const action = record(life, actionEvent(life, actionId));
+      if (life.age >= 13 && actionId === 'walk')
+        applyEffects(
+          life,
+          [{ flags: { 'movement-practice': true } }],
+          action.id,
+          action.description,
+        );
       if (life.age >= 18 && actionId === 'explore')
         applyEffects(life, [{ flags: { 'new-circles': true } }], action.id, action.description);
       const skill =
@@ -283,20 +306,15 @@ function progress(life: Life, months: number, random: () => number, actionId?: A
     if (ambient) record(life, ambient);
     const decision = coreDecision(life);
     if (decision) record(life, decision);
-    life.updatedAt = new Date().toISOString();
+    life.updatedAt = life.rng ? `${life.currentDate}T12:00:00.000Z` : new Date().toISOString();
   }
   return life;
 }
-export function advanceTime(life: Life, months = 1, random: () => number = Math.random): Life {
+export function advanceTime(life: Life, months = 1, random?: () => number): Life {
   return progress(life, months, random);
 }
 // Player actions remain a separate API and cannot be used for infant caregiving.
-export function advance(
-  life: Life,
-  actionId: ActionId,
-  months = 1,
-  random: () => number = Math.random,
-): Life {
+export function advance(life: Life, actionId: ActionId, months = 1, random?: () => number): Life {
   if (!Object.hasOwn(actions, actionId)) return life;
   return progress(life, months, random, actionId);
 }
@@ -315,6 +333,6 @@ export function resolveChoice(life: Life, eventId: string, choiceIndex: number):
   event.outcome = choice.result;
   event.resolution = { actor: protagonist(life), choiceIndex };
   effects(life, choice.effects);
-  life.updatedAt = new Date().toISOString();
+  life.updatedAt = life.rng ? `${life.currentDate}T12:00:00.000Z` : new Date().toISOString();
   return life;
 }

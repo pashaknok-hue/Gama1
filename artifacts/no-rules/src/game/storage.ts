@@ -1,3 +1,4 @@
+import { validRandom } from './random';
 import { validDate, civilAge } from './calendar';
 import { validSimulation, validPlan } from './causal-validation';
 import type { Life, LifeEvent } from './domain';
@@ -15,6 +16,7 @@ export function isValidLife(value: unknown): value is Life {
   const stats = value.stats as Record<string, unknown>;
   return (
     typeof value.id === 'string' &&
+    (value.rng === undefined || validRandom(value.rng)) &&
     validDate(value.currentDate) &&
     validDate(value.birthDate) &&
     value.currentDate >= value.birthDate &&

@@ -1,6 +1,6 @@
 import { yearWord } from '../../game/event-text';
 import type { Life } from '../../game/domain';
-import { monthIndex } from '../../game/causal-state';
+
 
 export default function LifeOverview({ life }: { life: Life }) {
   const state = life.simulation;
@@ -35,12 +35,13 @@ export default function LifeOverview({ life }: { life: Life }) {
           экономических данных используется нейтральный профиль.
         </p>
       </div>
-      <h3>Отложенные планы</h3>
+      <p>Репутация: {p.reputation ?? 0}. Привычки: {Object.keys(p.habits ?? {}).length ? `регулярное движение ${p.habits?.movement ?? 0}` : 'ещё формируются'}.</p>
+      <h3>Незавершённые линии</h3>
       {state.queue
         .filter((item) => item.status === 'pending')
         .map((item) => (
           <p key={item.id}>
-            {item.title} — через {Math.max(0, item.dueMonth - monthIndex(life.currentDate))} мес.
+            Незавершённая линия: {life.events.find(event => event.id === item.sourceEventId)?.title ?? 'Ранее принятое решение'}
           </p>
         ))}
       {!state.queue.some((item) => item.status === 'pending') && <p>Пока нет отложенных планов.</p>}
